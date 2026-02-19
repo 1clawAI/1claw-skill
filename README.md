@@ -8,17 +8,27 @@ Teaches agents to store, retrieve, rotate, and share secrets using the 1Claw vau
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `SKILL.md` | Primary skill description, setup, tools, and best practices |
-| `EXAMPLES.md` | Example agent conversations demonstrating each tool |
-| `CONFIG.md` | Environment variables, credential setup, and secret types |
+| File          | Purpose                                                     |
+| ------------- | ----------------------------------------------------------- |
+| `SKILL.md`    | Primary skill description, setup, tools, and best practices |
+| `EXAMPLES.md` | Example agent conversations demonstrating each tool         |
+| `CONFIG.md`   | Environment variables, credential setup, and secret types   |
 
 ## Install via ClawHub CLI
 
 ```bash
 clawhub install 1claw
 ```
+
+## Testing / validation
+
+To confirm the skill is valid for OpenClaw bots and ClawHub (required files, frontmatter, tool names):
+
+```bash
+./scripts/validate.sh
+```
+
+Run from the `skill` directory or from the repo root.
 
 ## Links
 

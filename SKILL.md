@@ -1,3 +1,9 @@
+---
+name: 1claw
+description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
+homepage: https://1claw.xyz
+---
+
 # 1Claw — HSM-Backed Secret Management
 
 Use this skill to securely store, retrieve, and share secrets using the 1Claw vault. 1Claw provides hardware security module (HSM) backed encryption so AI agents can access API keys, passwords, and credentials at runtime without exposing them in conversation context.
@@ -26,16 +32,16 @@ Add the 1Claw MCP server to your client configuration:
 
 ```json
 {
-  "mcpServers": {
-    "1claw": {
-      "command": "npx",
-      "args": ["-y", "@1claw/mcp"],
-      "env": {
-        "ONECLAW_AGENT_TOKEN": "<your-agent-jwt>",
-        "ONECLAW_VAULT_ID": "<your-vault-uuid>"
-      }
+    "mcpServers": {
+        "1claw": {
+            "command": "npx",
+            "args": ["-y", "@1claw/mcp"],
+            "env": {
+                "ONECLAW_AGENT_TOKEN": "<your-agent-jwt>",
+                "ONECLAW_VAULT_ID": "<your-vault-uuid>"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -58,9 +64,9 @@ npm install @1claw/sdk
 import { createClient } from "@1claw/sdk";
 
 const client = createClient({
-  baseUrl: "https://api.1claw.xyz",
-  agentId: process.env.ONECLAW_AGENT_ID,
-  apiKey: process.env.ONECLAW_AGENT_API_KEY,
+    baseUrl: "https://api.1claw.xyz",
+    agentId: process.env.ONECLAW_AGENT_ID,
+    apiKey: process.env.ONECLAW_AGENT_API_KEY,
 });
 ```
 
@@ -168,13 +174,13 @@ share_secret(secret_id: "...", email: "alice@example.com", expires_at: "2026-12-
 
 ## Error handling
 
-| Error | Meaning | Action |
-|-------|---------|--------|
-| 404 | Secret not found | Check the path with `list_secrets` |
-| 410 | Expired or max access count reached | Ask the user to store a new version |
-| 402 | Free tier quota exhausted | Inform the user to upgrade at 1claw.xyz/settings/billing |
-| 401 | Not authenticated | Token expired; re-authenticate |
-| 403 | No permission | Ask the user to grant access via a policy |
+| Error | Meaning                             | Action                                                   |
+| ----- | ----------------------------------- | -------------------------------------------------------- |
+| 404   | Secret not found                    | Check the path with `list_secrets`                       |
+| 410   | Expired or max access count reached | Ask the user to store a new version                      |
+| 402   | Free tier quota exhausted           | Inform the user to upgrade at 1claw.xyz/settings/billing |
+| 401   | Not authenticated                   | Token expired; re-authenticate                           |
+| 403   | No permission                       | Ask the user to grant access via a policy                |
 
 ## Links
 
