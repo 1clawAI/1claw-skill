@@ -60,7 +60,7 @@ import { createClient } from "@1claw/sdk";
 const client = createClient({
   baseUrl: "https://api.1claw.xyz",
   agentId: process.env.ONECLAW_AGENT_ID,
-  agentApiKey: process.env.ONECLAW_AGENT_API_KEY,
+  apiKey: process.env.ONECLAW_AGENT_API_KEY,
 });
 ```
 
@@ -181,5 +181,5 @@ share_secret(secret_id: "...", email: "alice@example.com", expires_at: "2026-12-
 - Dashboard: [1claw.xyz](https://1claw.xyz)
 - Docs: [docs.1claw.xyz](https://docs.1claw.xyz)
 - SDK: [github.com/1clawAI/1claw-sdk](https://github.com/1clawAI/1claw-sdk)
-- MCP server: [github.com/1clawAI/1claw](https://github.com/1clawAI/1claw/tree/main/packages/mcp)
+- MCP server: [@1claw/mcp on npm](https://www.npmjs.com/package/@1claw/mcp)
 - API: `https://api.1claw.xyz`
