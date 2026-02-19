@@ -24,5 +24,5 @@ clawhub install 1claw
 
 - [1Claw Dashboard](https://1claw.xyz)
 - [Documentation](https://docs.1claw.xyz)
-- [SDK](https://github.com/kmjones1979/1claw-sdk)
-- [MCP Server](https://github.com/kmjones1979/1claw/tree/main/packages/mcp)
+- [SDK](https://github.com/1clawAI/1claw-sdk)
+- [MCP Server](https://github.com/1clawAI/1claw/tree/main/packages/mcp)

@@ -180,6 +180,6 @@ share_secret(secret_id: "...", email: "alice@example.com", expires_at: "2026-12-
 
 - Dashboard: [1claw.xyz](https://1claw.xyz)
 - Docs: [docs.1claw.xyz](https://docs.1claw.xyz)
-- SDK: [github.com/kmjones1979/1claw-sdk](https://github.com/kmjones1979/1claw-sdk)
-- MCP server: [github.com/kmjones1979/1claw](https://github.com/kmjones1979/1claw/tree/main/packages/mcp)
+- SDK: [github.com/1clawAI/1claw-sdk](https://github.com/1clawAI/1claw-sdk)
+- MCP server: [github.com/1clawAI/1claw](https://github.com/1clawAI/1claw/tree/main/packages/mcp)
 - API: `https://api.1claw.xyz`
