@@ -30,9 +30,12 @@ A human must explicitly create a policy to grant an agent access. If no policy m
 
 ### Crypto transaction proxy
 
-Agents can have `crypto_proxy_enabled` set to `true` by a human. This lets the agent submit on-chain transaction intents through a signing proxy — signing keys stay in the HSM. The flag is disabled by default and can be toggled at any time.
+Agents can have `crypto_proxy_enabled` set to `true` by a human. When enabled, two things happen:
 
-Transaction endpoint: `POST /v1/agents/{id}/transactions` with `{ to, value, chain }`. The backend fetches the signing key from the vault, signs an EIP-155 transaction, and returns the signed transaction hex + keccak tx hash. The key is decrypted in-memory, used once, then zeroized.
+1. The agent **gains access** to submit on-chain transaction intents through a signing proxy — signing keys stay in the HSM.
+2. The agent is **blocked from reading** `private_key` and `ssh_key` type secrets directly via the normal secret read endpoint (returns 403). This prevents key exfiltration.
+
+Transaction endpoint: `POST /v1/agents/{id}/transactions` with `{ to, value, chain }`. The backend fetches the signing key from the vault, signs an EIP-155 transaction, and returns the signed transaction hex + keccak tx hash. The key is decrypted in-memory, used once, then zeroized. The flag is disabled by default and can be toggled at any time.
 
 ## Setup
 
@@ -191,7 +194,7 @@ Recipients of targeted shares (user/agent) must explicitly accept the share befo
 - **Access is deny-by-default.** Even with valid credentials, the agent can only access secrets allowed by its policies.
 - **Secret values are fetched just-in-time** and should never be stored, echoed, or included in conversation summaries.
 - **Agents cannot create email-based shares.** This prevents phishing via share links.
-- **Crypto proxy is opt-in.** Agents only gain transaction signing capabilities if a human explicitly enables `crypto_proxy_enabled`. It is off by default.
+- **Crypto proxy is opt-in and enforced.** Agents only gain transaction signing capabilities if a human explicitly enables `crypto_proxy_enabled`. When enabled, direct reads of `private_key` and `ssh_key` secrets are blocked — the agent must use the proxy. It is off by default.
 
 ## Best practices
 
