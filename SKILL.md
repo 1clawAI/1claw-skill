@@ -12,9 +12,19 @@ Use this skill to securely store, retrieve, and share secrets using the 1Claw va
 
 - You need an API key, password, or credential to complete a task
 - You want to store a newly generated credential securely
-- You need to share a secret with a human collaborator by email
+- You need to share a secret with a user or another agent
 - You need to rotate a credential after regenerating it
 - You want to check what secrets are available before using one
+
+## Access control model
+
+Agents do NOT get blanket access to all secrets in a vault. Access is controlled by policies that specify:
+- **Which paths** the agent can access (glob patterns like `api-keys/*` or `**`)
+- **Which permissions** (read, write, delete)
+- **Under what conditions** (IP allowlist, time windows)
+- **For how long** (policy expiry date)
+
+A human must explicitly create a policy to grant an agent access. If no policy matches, access is denied with 403.
 
 ## Setup
 
@@ -149,7 +159,7 @@ list_vaults()
 
 ### grant_access
 
-Grant a user or agent access to a vault.
+Grant a user or agent access to a vault. You can only grant access on vaults you created.
 
 ```
 grant_access(vault_id: "...", principal_type: "agent", principal_id: "...", permissions: ["read"])
@@ -157,11 +167,14 @@ grant_access(vault_id: "...", principal_type: "agent", principal_id: "...", perm
 
 ### share_secret
 
-Share a secret with someone by email. They don't need a 1Claw account — the share is claimed when they sign up.
+Share a specific secret with a user or agent by ID, or create an open link. Agents cannot create email-based shares — only humans can share via email from the dashboard.
 
 ```
-share_secret(secret_id: "...", email: "alice@example.com", expires_at: "2026-12-31T00:00:00Z", max_access_count: 3)
+share_secret(secret_id: "...", recipient_type: "user", recipient_id: "...", expires_at: "2026-12-31T00:00:00Z", max_access_count: 3)
+share_secret(secret_id: "...", recipient_type: "anyone_with_link", expires_at: "2026-12-31T00:00:00Z")
 ```
+
+Recipients of targeted shares (user/agent) must explicitly accept the share before they can access the secret.
 
 ## Best practices
 
@@ -170,7 +183,8 @@ share_secret(secret_id: "...", email: "alice@example.com", expires_at: "2026-12-
 3. **Use `describe_secret` first** if you just need to check whether a secret exists or is still valid.
 4. **Use `list_secrets` to discover** what credentials are available before guessing paths.
 5. **Rotate after regeneration.** If you regenerate an API key at a provider, immediately `rotate_and_store` the new value.
-6. **Share by email** when a human collaborator needs a credential. They'll see it when they log in.
+6. **Use `grant_access` for vault-level sharing.** This is the preferred way to share access — it creates a fine-grained policy with path patterns and permissions.
+7. **Use `share_secret` for one-off sharing.** For sharing a single specific secret with a user or agent.
 
 ## Error handling
 
@@ -181,6 +195,7 @@ share_secret(secret_id: "...", email: "alice@example.com", expires_at: "2026-12-
 | 402   | Free tier quota exhausted           | Inform the user to upgrade at 1claw.xyz/settings/billing |
 | 401   | Not authenticated                   | Token expired; re-authenticate                           |
 | 403   | No permission                       | Ask the user to grant access via a policy                |
+| 429   | Rate limited                        | Wait and retry; share creation is limited to 10/min/org  |
 
 ## Links
 

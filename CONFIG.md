@@ -66,5 +66,8 @@ Use the returned `access_token` as `ONECLAW_AGENT_TOKEN`.
 ## Rate limits and billing
 
 - Free tier: 1,000 API requests/month per organization.
+- Share creation is rate-limited to 10 per minute per organization.
+- Agents cannot create email-based share invites (only human users can).
+- Share recipients must explicitly accept shares before accessing secrets.
 - After the free tier, requests return `402 Payment Required` with x402 on-chain payment details.
 - Upgrade or pay per-request at [1claw.xyz/settings/billing](https://1claw.xyz/settings/billing).
