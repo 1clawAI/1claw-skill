@@ -178,14 +178,15 @@ grant_access(vault_id: "...", principal_type: "agent", principal_id: "...", perm
 
 ### share_secret
 
-Share a specific secret with a user or agent by ID, or create an open link. Agents cannot create email-based shares — only humans can share via email from the dashboard.
+Share a secret with your creator (the human who registered you), a specific user or agent by ID, or create an open link. Use `recipient_type: "creator"` to share back with your human — no ID needed.
 
 ```
+share_secret(secret_id: "...", recipient_type: "creator", expires_at: "2026-12-31T00:00:00Z")
 share_secret(secret_id: "...", recipient_type: "user", recipient_id: "...", expires_at: "2026-12-31T00:00:00Z", max_access_count: 3)
 share_secret(secret_id: "...", recipient_type: "anyone_with_link", expires_at: "2026-12-31T00:00:00Z")
 ```
 
-Recipients of targeted shares (user/agent) must explicitly accept the share before they can access the secret.
+Recipients of targeted shares (creator/user/agent) must explicitly accept the share before they can access the secret. Agents cannot create email-based shares.
 
 ## Security model
 
