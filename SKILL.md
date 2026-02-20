@@ -2,6 +2,8 @@
 name: 1claw
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
+repository: https://github.com/1clawAI/1claw
+metadata: {"openclaw":{"requires":{"env":["ONECLAW_AGENT_TOKEN","ONECLAW_VAULT_ID"],"bins":[]},"primaryEnv":"ONECLAW_AGENT_TOKEN","install":[{"id":"npm","kind":"node","package":"@1claw/mcp","bins":["1claw-mcp"],"label":"1Claw MCP Server"}],"credentials":["ONECLAW_AGENT_TOKEN"],"permissions":["vault:read","vault:write","vault:delete","secret:read","secret:write","secret:delete","policy:create","share:create"]}}
 ---
 
 # 1Claw — HSM-Backed Secret Management
@@ -175,6 +177,14 @@ share_secret(secret_id: "...", recipient_type: "anyone_with_link", expires_at: "
 ```
 
 Recipients of targeted shares (user/agent) must explicitly accept the share before they can access the secret.
+
+## Security model
+
+- **Credentials are configured by the human**, not the agent. The `ONECLAW_AGENT_TOKEN` and `ONECLAW_VAULT_ID` environment variables are set in the MCP server config or SDK initialization by the human who owns the agent.
+- **The agent never sees its own credentials.** The MCP server reads them from the environment and uses them to authenticate API requests on behalf of the agent.
+- **Access is deny-by-default.** Even with valid credentials, the agent can only access secrets allowed by its policies.
+- **Secret values are fetched just-in-time** and should never be stored, echoed, or included in conversation summaries.
+- **Agents cannot create email-based shares.** This prevents phishing via share links.
 
 ## Best practices
 
