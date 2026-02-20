@@ -30,7 +30,9 @@ A human must explicitly create a policy to grant an agent access. If no policy m
 
 ### Crypto transaction proxy
 
-Agents can have `crypto_proxy_enabled` set to `true` by a human. This lets the agent submit on-chain transaction intents through a signing proxy — signing keys stay in the HSM. The flag is disabled by default and can be toggled at any time. Transaction submission endpoints are coming soon; the flag is the prerequisite.
+Agents can have `crypto_proxy_enabled` set to `true` by a human. This lets the agent submit on-chain transaction intents through a signing proxy — signing keys stay in the HSM. The flag is disabled by default and can be toggled at any time.
+
+Transaction endpoint: `POST /v1/agents/{id}/transactions` with `{ to, value, chain }`. The backend fetches the signing key from the vault, signs an EIP-155 transaction, and returns the signed transaction hex + keccak tx hash. The key is decrypted in-memory, used once, then zeroized.
 
 ## Setup
 
