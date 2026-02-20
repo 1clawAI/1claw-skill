@@ -28,6 +28,10 @@ Agents do NOT get blanket access to all secrets in a vault. Access is controlled
 
 A human must explicitly create a policy to grant an agent access. If no policy matches, access is denied with 403.
 
+### Crypto transaction proxy
+
+Agents can have `crypto_proxy_enabled` set to `true` by a human. This lets the agent submit on-chain transaction intents through a signing proxy — signing keys stay in the HSM. The flag is disabled by default and can be toggled at any time. Transaction submission endpoints are coming soon; the flag is the prerequisite.
+
 ## Setup
 
 ### Prerequisites
@@ -185,6 +189,7 @@ Recipients of targeted shares (user/agent) must explicitly accept the share befo
 - **Access is deny-by-default.** Even with valid credentials, the agent can only access secrets allowed by its policies.
 - **Secret values are fetched just-in-time** and should never be stored, echoed, or included in conversation summaries.
 - **Agents cannot create email-based shares.** This prevents phishing via share links.
+- **Crypto proxy is opt-in.** Agents only gain transaction signing capabilities if a human explicitly enables `crypto_proxy_enabled`. It is off by default.
 
 ## Best practices
 
