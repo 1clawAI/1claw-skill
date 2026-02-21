@@ -3,7 +3,40 @@ name: 1claw
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
-metadata: {"openclaw":{"requires":{"env":["ONECLAW_AGENT_TOKEN","ONECLAW_VAULT_ID"],"bins":[]},"primaryEnv":"ONECLAW_AGENT_TOKEN","install":[{"id":"npm","kind":"node","package":"@1claw/mcp","bins":["1claw-mcp"],"label":"1Claw MCP Server"}],"credentials":["ONECLAW_AGENT_TOKEN"],"permissions":["vault:read","vault:write","vault:delete","secret:read","secret:write","secret:delete","policy:create","share:create"]}}
+metadata:
+    {
+        "openclaw":
+            {
+                "requires":
+                    {
+                        "env": ["ONECLAW_AGENT_TOKEN", "ONECLAW_VAULT_ID"],
+                        "bins": [],
+                    },
+                "primaryEnv": "ONECLAW_AGENT_TOKEN",
+                "install":
+                    [
+                        {
+                            "id": "npm",
+                            "kind": "node",
+                            "package": "@1claw/mcp",
+                            "bins": ["1claw-mcp"],
+                            "label": "1Claw MCP Server",
+                        },
+                    ],
+                "credentials": ["ONECLAW_AGENT_TOKEN"],
+                "permissions":
+                    [
+                        "vault:read",
+                        "vault:write",
+                        "vault:delete",
+                        "secret:read",
+                        "secret:write",
+                        "secret:delete",
+                        "policy:create",
+                        "share:create",
+                    ],
+            },
+    }
 ---
 
 # 1Claw — HSM-Backed Secret Management
@@ -21,6 +54,7 @@ Use this skill to securely store, retrieve, and share secrets using the 1Claw va
 ## Access control model
 
 Agents do NOT get blanket access to all secrets in a vault. Access is controlled by policies that specify:
+
 - **Which paths** the agent can access (glob patterns like `api-keys/*` or `**`)
 - **Which permissions** (read, write, delete)
 - **Under what conditions** (IP allowlist, time windows)
@@ -196,6 +230,7 @@ Recipients of targeted shares (creator/user/agent) must explicitly accept the sh
 - **Secret values are fetched just-in-time** and should never be stored, echoed, or included in conversation summaries.
 - **Agents cannot create email-based shares.** This prevents phishing via share links.
 - **Crypto proxy is opt-in and enforced.** Agents only gain transaction signing capabilities if a human explicitly enables `crypto_proxy_enabled`. When enabled, direct reads of `private_key` and `ssh_key` secrets are blocked — the agent must use the proxy. It is off by default.
+- **Two-factor authentication.** Human users can enable TOTP-based 2FA from the dashboard (Settings → Security). When enabled, login requires a 6-digit authenticator app code in addition to credentials. 2FA does not affect agent authentication.
 
 ## Best practices
 
@@ -209,14 +244,14 @@ Recipients of targeted shares (creator/user/agent) must explicitly accept the sh
 
 ## Error handling
 
-| Error | Meaning                             | Action                                                   |
-| ----- | ----------------------------------- | -------------------------------------------------------- |
-| 404   | Secret not found                    | Check the path with `list_secrets`                       |
-| 410   | Expired or max access count reached | Ask the user to store a new version                      |
+| Error | Meaning                               | Action                                                                                                                                                                     |
+| ----- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 404   | Secret not found                      | Check the path with `list_secrets`                                                                                                                                         |
+| 410   | Expired or max access count reached   | Ask the user to store a new version                                                                                                                                        |
 | 402   | Quota exhausted, insufficient credits | Inform the user to top up credits or upgrade at 1claw.xyz/settings/billing. Response includes `code` field: `insufficient_credits`, `no_credits`, or x402 payment envelope |
-| 401   | Not authenticated                   | Token expired; re-authenticate                           |
-| 403   | No permission                       | Ask the user to grant access via a policy                |
-| 429   | Rate limited                        | Wait and retry; share creation is limited to 10/min/org  |
+| 401   | Not authenticated                     | Token expired; re-authenticate                                                                                                                                             |
+| 403   | No permission                         | Ask the user to grant access via a policy                                                                                                                                  |
+| 429   | Rate limited                          | Wait and retry; share creation is limited to 10/min/org                                                                                                                    |
 
 ## Links
 
