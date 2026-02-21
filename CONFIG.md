@@ -65,9 +65,12 @@ Use the returned `access_token` as `ONECLAW_AGENT_TOKEN`.
 
 ## Rate limits and billing
 
-- Free tier: 1,000 API requests/month per organization.
+- **Free tier:** 1,000 API requests/month, 3 vaults, 50 secrets, 2 agents per organization.
+- **Subscription tiers:** Pro ($29/mo), Business ($149/mo), Enterprise (custom). Higher quotas and discounted overage rates.
+- **Overage methods (org chooses one):**
+  - **Prepaid credits** — Top up $5–$1,000 via Stripe. Credits deducted at tier-discounted rates. Expire 12 months from purchase.
+  - **x402 micropayments** — Per-query on-chain payments on Base. No credit card needed.
 - Share creation is rate-limited to 10 per minute per organization.
 - Agents cannot create email-based share invites (only human users can).
 - Share recipients must explicitly accept shares before accessing secrets.
-- After the free tier, requests return `402 Payment Required` with x402 on-chain payment details.
-- Upgrade or pay per-request at [1claw.xyz/settings/billing](https://1claw.xyz/settings/billing).
+- Manage billing and upgrade at [1claw.xyz/settings/billing](https://1claw.xyz/settings/billing) or [1claw.xyz/pricing](https://1claw.xyz/pricing).
