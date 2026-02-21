@@ -4,34 +4,35 @@
 
 ### MCP server (stdio mode)
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `ONECLAW_AGENT_TOKEN` | Yes | Agent JWT (from `POST /v1/auth/agent-token`) |
-| `ONECLAW_VAULT_ID` | Yes | UUID of the vault to operate on |
-| `ONECLAW_BASE_URL` | No | API URL (default: `https://api.1claw.xyz`) |
+| Variable              | Required | Description                                  |
+| --------------------- | -------- | -------------------------------------------- |
+| `ONECLAW_AGENT_TOKEN` | Yes      | Agent JWT (from `POST /v1/auth/agent-token`) |
+| `ONECLAW_VAULT_ID`    | Yes      | UUID of the vault to operate on              |
+| `ONECLAW_BASE_URL`    | No       | API URL (default: `https://api.1claw.xyz`)   |
 
 ### MCP server (HTTP streaming mode)
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `MCP_TRANSPORT` | Yes | Set to `httpStream` |
-| `PORT` | No | HTTP port (default: `8080`) |
-| `ONECLAW_BASE_URL` | No | API URL (default: `https://api.1claw.xyz`) |
+| Variable           | Required | Description                                |
+| ------------------ | -------- | ------------------------------------------ |
+| `MCP_TRANSPORT`    | Yes      | Set to `httpStream`                        |
+| `PORT`             | No       | HTTP port (default: `8080`)                |
+| `ONECLAW_BASE_URL` | No       | API URL (default: `https://api.1claw.xyz`) |
 
 Per-request authentication via headers:
+
 - `Authorization: Bearer <agent-jwt>`
 - `X-Vault-ID: <vault-uuid>`
 
 ### TypeScript SDK
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `ONECLAW_API_KEY` | Yes* | Personal API key (`1ck_...`) |
-| `ONECLAW_BASE_URL` | No | API URL (default: `https://api.1claw.xyz`) |
-| `ONECLAW_AGENT_ID` | Yes* | Agent UUID (alternative to API key) |
-| `ONECLAW_AGENT_API_KEY` | Yes* | Agent API key (`ocv_...`) |
+| Variable                | Required | Description                                |
+| ----------------------- | -------- | ------------------------------------------ |
+| `ONECLAW_API_KEY`       | Yes\*    | Personal API key (`1ck_...`)               |
+| `ONECLAW_BASE_URL`      | No       | API URL (default: `https://api.1claw.xyz`) |
+| `ONECLAW_AGENT_ID`      | Yes\*    | Agent UUID (alternative to API key)        |
+| `ONECLAW_AGENT_API_KEY` | Yes\*    | Agent API key (`ocv_...`)                  |
 
-*Use either a personal API key or agent credentials, not both.
+\*Use either a personal API key or agent credentials, not both.
 
 ## Getting your credentials
 
@@ -52,24 +53,24 @@ Use the returned `access_token` as `ONECLAW_AGENT_TOKEN`.
 
 ## Secret types
 
-| Type | Use for |
-|------|---------|
-| `api_key` | API keys, tokens, bearer credentials |
-| `password` | Passwords, passphrases |
-| `private_key` | SSH keys, signing keys |
-| `certificate` | TLS/SSL certificates |
-| `ssh_key` | SSH key pairs |
-| `env_bundle` | Multi-line KEY=VALUE environment configs |
-| `note` | Free-form text notes |
-| `file` | Raw file contents |
+| Type          | Use for                                  |
+| ------------- | ---------------------------------------- |
+| `api_key`     | API keys, tokens, bearer credentials     |
+| `password`    | Passwords, passphrases                   |
+| `private_key` | SSH keys, signing keys                   |
+| `certificate` | TLS/SSL certificates                     |
+| `ssh_key`     | SSH key pairs                            |
+| `env_bundle`  | Multi-line KEY=VALUE environment configs |
+| `note`        | Free-form text notes                     |
+| `file`        | Raw file contents                        |
 
 ## Rate limits and billing
 
 - **Free tier:** 1,000 API requests/month, 3 vaults, 50 secrets, 2 agents per organization.
 - **Subscription tiers:** Pro ($29/mo), Business ($149/mo), Enterprise (custom). Higher quotas and discounted overage rates.
 - **Overage methods (org chooses one):**
-  - **Prepaid credits** — Top up $5–$1,000 via Stripe. Credits deducted at tier-discounted rates. Expire 12 months from purchase.
-  - **x402 micropayments** — Per-query on-chain payments on Base. No credit card needed.
+    - **Prepaid credits** — Top up $5–$1,000 via Stripe. Credits deducted at tier-discounted rates. Expire 12 months from purchase.
+    - **x402 micropayments** — Per-query on-chain payments on Base. No credit card needed.
 - Share creation is rate-limited to 10 per minute per organization.
 - Agents cannot create email-based share invites (only human users can).
 - Share recipients must explicitly accept shares before accessing secrets.
