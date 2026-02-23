@@ -79,6 +79,8 @@ Transaction endpoint: `POST /v1/agents/{id}/transactions` with `{ to, value, cha
 2. An agent registered under your account
 3. An access policy granting the agent permission to the vault
 
+**CLI for humans:** For CI/CD and servers, humans can use the official CLI: `npm install -g @1claw/cli`, then `1claw login` (browser-based) or set `ONECLAW_TOKEN` / `ONECLAW_API_KEY`. See [docs — CLI](https://docs.1claw.xyz/docs/guides/cli).
+
 ### MCP server (recommended)
 
 Add the 1Claw MCP server to your client configuration:
