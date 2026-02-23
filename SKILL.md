@@ -60,7 +60,7 @@ Agents do NOT get blanket access to all secrets in a vault. Access is controlled
 - **Under what conditions** (IP allowlist, time windows)
 - **For how long** (policy expiry date)
 
-A human must explicitly create a policy to grant an agent access. If no policy matches, access is denied with 403.
+A human must explicitly create a policy to grant an agent access. If no policy matches, access is denied with 403. In the dashboard (Vaults → [vault] → Policies), humans can create policies (with a vault selector and agent dropdown), edit permissions/conditions/expiry, and delete policies.
 
 ### Crypto transaction proxy
 
