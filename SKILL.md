@@ -60,7 +60,7 @@ Agents do NOT get blanket access to all secrets in a vault. Access is controlled
 - **Under what conditions** (IP allowlist, time windows)
 - **For how long** (policy expiry date)
 
-A human must explicitly create a policy to grant an agent access. If no policy matches, access is denied with 403. In the dashboard (Vaults → [vault] → Policies), humans can create policies (with a vault selector and agent dropdown), edit permissions/conditions/expiry, and delete policies.
+A human must explicitly create a policy to grant an agent access. If no policy matches, access is denied with 403. In the dashboard (Vaults → [vault] → Policies), humans can create policies (with a vault selector and agent dropdown), edit permissions/conditions/expiry, and delete policies. When an agent gets a JWT via `POST /v1/auth/agent-token`, the JWT’s `scopes` are derived from these policies (path patterns) when the agent record has no scopes set, so the token always reflects current policy access.
 
 ### Crypto transaction proxy
 
@@ -81,11 +81,31 @@ Transaction endpoint: `POST /v1/agents/{id}/transactions` with `{ to, value, cha
 
 **CLI for humans:** For CI/CD and servers, humans can use the official CLI: `npm install -g @1claw/cli`, then `1claw login` (browser-based) or set `ONECLAW_TOKEN` / `ONECLAW_API_KEY`. See [docs — CLI](https://docs.1claw.xyz/docs/guides/cli).
 
+**API key authentication:** `1ck_` keys (personal or agent API keys) can be used as Bearer tokens for all API endpoints. No separate JWT exchange required.
+
 ### MCP server (recommended)
 
-Add the 1Claw MCP server to your client configuration:
+Add the 1Claw MCP server to your client configuration.
 
-**Claude Desktop / Cursor** (stdio mode):
+**Recommended: auto-refreshing agent credentials** — Use `ONECLAW_AGENT_ID` + `ONECLAW_AGENT_API_KEY` instead of a static JWT. The MCP server automatically refreshes tokens and stays authenticated:
+
+```json
+{
+    "mcpServers": {
+        "1claw": {
+            "command": "npx",
+            "args": ["-y", "@1claw/mcp"],
+            "env": {
+                "ONECLAW_AGENT_ID": "<your-agent-uuid>",
+                "ONECLAW_AGENT_API_KEY": "<agent-api-key>",
+                "ONECLAW_VAULT_ID": "<your-vault-uuid>"
+            }
+        }
+    }
+}
+```
+
+**Alternative: static JWT** — `ONECLAW_AGENT_TOKEN` + `ONECLAW_VAULT_ID` (tokens expire; manual refresh required):
 
 ```json
 {
@@ -222,7 +242,7 @@ share_secret(secret_id: "...", recipient_type: "user", recipient_id: "...", expi
 share_secret(secret_id: "...", recipient_type: "anyone_with_link", expires_at: "2026-12-31T00:00:00Z")
 ```
 
-Recipients of targeted shares (creator/user/agent) must explicitly accept the share before they can access the secret. Agents cannot create email-based shares.
+`max_access_count: 0` is treated as unlimited (not zero reads). Recipients of targeted shares (creator/user/agent) must explicitly accept the share before they can access the secret. Agents cannot create email-based shares.
 
 ## Security model
 
