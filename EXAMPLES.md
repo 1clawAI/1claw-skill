@@ -93,7 +93,37 @@ Rotated secret at 'api-keys/openai'. New version: 2.
 
 **Agent:** "I loaded 3 environment variables from the production config. The deploy script is ready to run."
 
-## Example 7: Agent discovers it lacks permission
+## Example 7: Simulating a transaction before signing
+
+**User:** "Send 0.01 ETH to 0xdead...beef on Base, but check it first"
+
+**Agent thinking:** I should simulate the transaction first to verify it will succeed and check gas costs.
+
+```
+→ simulate_transaction(to: "0x000000000000000000000000000000000000dEaD", value: "0.01", chain: "base")
+Simulation SUCCESS
+Gas used: 21000
+Balance changes:
+  0xYourAddress: -0.01 ETH
+  0x000...dEaD: +0.01 ETH
+Tenderly: https://dashboard.tenderly.co/...
+```
+
+**Agent:** "The simulation succeeded — it will transfer 0.01 ETH to the burn address using 21,000 gas. Shall I submit it?"
+
+**User:** "Yes, go ahead"
+
+```
+→ submit_transaction(to: "0x000000000000000000000000000000000000dEaD", value: "0.01", chain: "base", simulate_first: true)
+Transaction BROADCAST
+ID: tx_abc123
+Tx hash: 0x1234...
+Simulation: sim_xyz (success)
+```
+
+**Agent:** "Done — the transaction was simulated, signed, and broadcast on Base. Transaction hash: `0x1234...`"
+
+## Example 8: Agent discovers it lacks permission
 
 **User:** "Read the SSH key at `keys/prod-server`"
 

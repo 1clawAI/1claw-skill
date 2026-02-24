@@ -2,7 +2,18 @@
 
 ## Environment variables
 
-### MCP server (stdio mode)
+### MCP server (stdio mode — recommended: auto-refreshing credentials)
+
+| Variable                | Required | Description                                                |
+| ----------------------- | -------- | ---------------------------------------------------------- |
+| `ONECLAW_AGENT_ID`      | Yes\*    | Agent UUID                                                 |
+| `ONECLAW_AGENT_API_KEY` | Yes\*    | Agent API key (`ocv_...`). Auto-refreshes JWT.             |
+| `ONECLAW_VAULT_ID`      | Yes      | UUID of the vault to operate on                            |
+| `ONECLAW_BASE_URL`      | No       | API URL (default: `https://api.1claw.xyz`)                 |
+
+\*Or use `ONECLAW_AGENT_TOKEN` (static JWT, expires ~1h) instead of agent ID + API key.
+
+### MCP server (stdio mode — legacy: static JWT)
 
 | Variable              | Required | Description                                  |
 | --------------------- | -------- | -------------------------------------------- |

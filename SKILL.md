@@ -34,6 +34,8 @@ metadata:
                         "secret:delete",
                         "policy:create",
                         "share:create",
+                        "tx:sign",
+                        "tx:simulate",
                     ],
             },
     }
@@ -69,7 +71,14 @@ Agents can have `crypto_proxy_enabled` set to `true` by a human. When enabled, t
 1. The agent **gains access** to submit on-chain transaction intents through a signing proxy — signing keys stay in the HSM.
 2. The agent is **blocked from reading** `private_key` and `ssh_key` type secrets directly via the normal secret read endpoint (returns 403). This prevents key exfiltration.
 
-Transaction endpoint: `POST /v1/agents/{id}/transactions` with `{ to, value, chain }`. The backend fetches the signing key from the vault, signs an EIP-155 transaction, and returns the signed transaction hex + keccak tx hash. The key is decrypted in-memory, used once, then zeroized. The flag is disabled by default and can be toggled at any time.
+Transaction endpoints:
+- `POST /v1/agents/{id}/transactions` with `{ to, value, chain, simulate_first?, max_fee_per_gas?, max_priority_fee_per_gas? }` — signs and optionally broadcasts. Supports EIP-155 (legacy) and EIP-1559 (Type 2) fee modes. Nonce auto-resolved when omitted.
+- `POST /v1/agents/{id}/transactions/simulate` — pre-flight simulation via Tenderly without signing. Returns balance changes, gas estimates, and success/revert status.
+- `POST /v1/agents/{id}/transactions/simulate-bundle` — simulate multiple transactions sequentially (e.g. approve + swap).
+
+The `simulate_first` flag runs a Tenderly simulation before signing. If the simulation reverts, the transaction is rejected with 422. Org admins can enforce simulation as mandatory via the `crypto_proxy.require_simulation` setting.
+
+The backend fetches the signing key from the vault, signs the transaction, and returns the signed transaction hex + keccak tx hash. The key is decrypted in-memory, used once, then zeroized. The flag is disabled by default and can be toggled at any time.
 
 ## Setup
 
@@ -243,6 +252,24 @@ share_secret(secret_id: "...", recipient_type: "anyone_with_link", expires_at: "
 ```
 
 `max_access_count: 0` is treated as unlimited (not zero reads). Recipients of targeted shares (creator/user/agent) must explicitly accept the share before they can access the secret. Agents cannot create email-based shares.
+
+### simulate_transaction
+
+Simulate an EVM transaction via Tenderly without signing or broadcasting. Returns balance changes, gas estimates, and success/revert status. Use this to preview what a transaction will do before committing real funds.
+
+```
+simulate_transaction(to: "0x...", value: "0.01", chain: "base")
+simulate_transaction(to: "0x...", value: "0", chain: "ethereum", data: "0xa9059cbb...", gas_limit: 100000)
+```
+
+### submit_transaction
+
+Submit an EVM transaction to be signed by the crypto proxy and optionally broadcast. Supports legacy and EIP-1559 fee modes. Set `simulate_first` to true (the default) to run a Tenderly simulation before signing.
+
+```
+submit_transaction(to: "0x...", value: "0.01", chain: "base", simulate_first: true)
+submit_transaction(to: "0x...", value: "0", chain: "ethereum", data: "0xa9059cbb...", max_fee_per_gas: "30000000000", max_priority_fee_per_gas: "1000000000")
+```
 
 ## Security model
 
