@@ -80,6 +80,17 @@ The `simulate_first` flag runs a Tenderly simulation before signing. If the simu
 
 The backend fetches the signing key from the vault, signs the transaction, and returns the signed transaction hex + keccak tx hash. The key is decrypted in-memory, used once, then zeroized. The flag is disabled by default and can be toggled at any time.
 
+### Transaction guardrails
+
+Humans can configure per-agent guardrails that restrict what the crypto proxy allows. These are enforced server-side before any transaction is signed:
+
+- **Allowed destinations** (`tx_to_allowlist`): List of permitted `to` addresses. If set, any transaction to an address not on the list is rejected with 403.
+- **Max value per tx** (`tx_max_value_eth`): Maximum ETH value for a single transaction. Transactions exceeding this are rejected.
+- **Daily spend limit** (`tx_daily_limit_eth`): Maximum cumulative ETH spend over a rolling 24-hour window. Prevents runaway spending.
+- **Allowed chains** (`tx_allowed_chains`): Restrict which chains the agent can transact on (e.g. only `sepolia` for testing). Transactions on other chains are rejected.
+
+All guardrails default to unrestricted. Humans configure them via the dashboard (Agent detail → Transaction Guardrails), CLI (`1claw agent update --tx-max-value 0.5`), or SDK (`agents.update(id, { tx_max_value_eth: "0.5" })`). An agent cannot modify its own guardrails.
+
 ## Setup
 
 ### Prerequisites
@@ -279,6 +290,7 @@ submit_transaction(to: "0x...", value: "0", chain: "ethereum", data: "0xa9059cbb
 - **Secret values are fetched just-in-time** and should never be stored, echoed, or included in conversation summaries.
 - **Agents cannot create email-based shares.** This prevents phishing via share links.
 - **Crypto proxy is opt-in and enforced.** Agents only gain transaction signing capabilities if a human explicitly enables `crypto_proxy_enabled`. When enabled, direct reads of `private_key` and `ssh_key` secrets are blocked — the agent must use the proxy. It is off by default.
+- **Transaction guardrails are human-controlled.** Destination allowlists, per-tx value caps, daily spend limits, and chain restrictions are configured by humans and enforced server-side before signing. Agents cannot modify their own guardrails.
 - **Two-factor authentication.** Human users can enable TOTP-based 2FA from the dashboard (Settings → Security). When enabled, login requires a 6-digit authenticator app code in addition to credentials. 2FA does not affect agent authentication.
 
 ## Best practices
