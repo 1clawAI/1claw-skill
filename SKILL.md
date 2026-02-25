@@ -133,8 +133,8 @@ curl -H "Authorization: Bearer $TOKEN" https://api.1claw.xyz/v1/vaults
 1. Human registers an agent in the dashboard or via `POST /v1/agents` → receives `agent_id` + `api_key` (prefix `ocv_`).
 2. Agent exchanges credentials: `POST /v1/auth/agent-token` with `{ "agent_id": "<uuid>", "api_key": "<key>" }` → returns `{ "access_token": "<jwt>", "token_type": "bearer", "expires_in": 3600 }`.
 3. Agent uses `Authorization: Bearer <jwt>` on all subsequent requests.
-4. JWT scopes derive from the agent's access policies (path patterns). If no policies exist, scopes default to `["*"]`.
-5. Tokens expire in ~1 hour. The MCP server auto-refreshes 60s before expiry.
+4. JWT scopes derive from the agent's access policies (path patterns). If no policies exist, scopes are empty (zero access). The agent's `vault_ids` are also included in the JWT — requests to unlisted vaults are rejected.
+5. Token TTL defaults to ~1 hour but can be set per-agent via `token_ttl_seconds`. The MCP server auto-refreshes 60s before expiry.
 
 ### API key auth
 
@@ -311,6 +311,10 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET` | `/v1/vaults` | List vaults → `{ vaults: [...] }` |
 | `GET` | `/v1/vaults/{id}` | Get vault details |
 | `DELETE` | `/v1/vaults/{id}` | Delete vault → `204` |
+| `POST` | `/v1/vaults/{id}/cmek` | Enable CMEK (`{ fingerprint }`) |
+| `DELETE` | `/v1/vaults/{id}/cmek` | Disable CMEK |
+| `POST` | `/v1/vaults/{id}/cmek-rotate` | Start CMEK key rotation (headers: `X-CMEK-Old-Key`, `X-CMEK-New-Key`) |
+| `GET` | `/v1/vaults/{id}/cmek-rotate/{job_id}` | Get rotation job status |
 
 ### Secrets
 
@@ -415,7 +419,7 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `secrets` | `list(vaultId, prefix?)` | List secret metadata |
 | `secrets` | `delete(vaultId, key)` | Delete secret |
 | `secrets` | `rotate(vaultId, key, newValue)` | Rotate secret to new version |
-| `agents` | `create({ name, description?, scopes?, expires_at?, crypto_proxy_enabled? })` | Create agent → returns agent + api_key |
+| `agents` | `create({ name, description?, scopes?, expires_at?, crypto_proxy_enabled?, token_ttl_seconds?, vault_ids? })` | Create agent → returns agent + api_key |
 | `agents` | `get(agentId)` | Get agent |
 | `agents` | `list()` | List agents |
 | `agents` | `update(agentId, { is_active?, scopes?, crypto_proxy_enabled?, tx_*? })` | Update agent |
@@ -507,6 +511,27 @@ Agents do **not** get blanket access. A human must create a policy to grant an a
 
 If no policy matches → **403 Forbidden**. Vault creators always have full access (owner bypass).
 
+### Vault binding and token scoping
+
+Agents can be restricted beyond policies:
+
+- **`vault_ids`**: Restrict the agent to specific vaults. If non-empty, any request to a vault not in the list returns 403.
+- **`token_ttl_seconds`**: Custom JWT expiry per agent (e.g., 300 for 5-minute tokens).
+- **Scopes from policies**: JWT scopes are derived from the agent's access policies. If an agent has no policies and no explicit scopes, it has zero access.
+
+Set via dashboard, CLI (`--token-ttl`, `--vault-ids`), SDK, or API.
+
+### Customer-Managed Encryption Keys (CMEK)
+
+Enterprise opt-in feature (Business tier and above). A human generates a 256-bit AES key in the dashboard — the key never leaves their device. Only its SHA-256 fingerprint is stored on the server.
+
+- Enable: `POST /v1/vaults/{id}/cmek` with `{ fingerprint }`
+- Disable: `DELETE /v1/vaults/{id}/cmek`
+- Rotate: `POST /v1/vaults/{id}/cmek-rotate` (server-assisted, batched in 100s)
+- Secrets stored in a CMEK vault have `cmek_encrypted: true` in responses
+
+Agents reading from a CMEK vault receive the encrypted blob. The CMEK key is required to decrypt client-side. This is designed for organizations with compliance requirements — the default HSM encryption is already strong.
+
 ### Crypto transaction proxy
 
 When `crypto_proxy_enabled = true` (set by a human):
@@ -584,8 +609,8 @@ All error responses include a `detail` field with a human-readable message.
 |------|-------------|--------|---------|--------|-------|
 | Free | 1,000 | 3 | 50 | 2 | $0 |
 | Pro | 25,000 | 25 | 500 | 10 | $29/mo |
-| Business | 100,000 | 100 | 5,000 | 50 | $149/mo |
-| Enterprise | Custom | Unlimited | Unlimited | Unlimited | Contact |
+| Business | 100,000 | 100 | 5,000 | 50 | $149/mo (+ CMEK) |
+| Enterprise | Custom | Unlimited | Unlimited | Unlimited | Contact (+ CMEK + KMS delegation) |
 
 Overage methods: **prepaid credits** (top up via Stripe, deducted per request) or **x402 micropayments** (per-query on-chain payments on Base).
 
