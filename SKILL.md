@@ -9,10 +9,10 @@ metadata:
             {
                 "requires":
                     {
-                        "env": ["ONECLAW_AGENT_TOKEN", "ONECLAW_VAULT_ID"],
+                        "env": ["ONECLAW_AGENT_ID", "ONECLAW_AGENT_API_KEY", "ONECLAW_VAULT_ID"],
                         "bins": [],
                     },
-                "primaryEnv": "ONECLAW_AGENT_TOKEN",
+                "primaryEnv": "ONECLAW_AGENT_ID",
                 "install":
                     [
                         {
@@ -23,7 +23,7 @@ metadata:
                             "label": "1Claw MCP Server",
                         },
                     ],
-                "credentials": ["ONECLAW_AGENT_TOKEN"],
+                "credentials": ["ONECLAW_AGENT_ID", "ONECLAW_AGENT_API_KEY", "ONECLAW_VAULT_ID"],
                 "permissions":
                     [
                         "vault:read",
@@ -284,7 +284,7 @@ submit_transaction(to: "0x...", value: "0", chain: "ethereum", data: "0xa9059cbb
 
 ## Security model
 
-- **Credentials are configured by the human**, not the agent. The `ONECLAW_AGENT_TOKEN` and `ONECLAW_VAULT_ID` environment variables are set in the MCP server config or SDK initialization by the human who owns the agent.
+- **Credentials are configured by the human**, not the agent. Use **`ONECLAW_AGENT_ID` + `ONECLAW_AGENT_API_KEY` + `ONECLAW_VAULT_ID`** (recommended; the MCP server exchanges them for a JWT and refreshes automatically). Alternatively, the human can set `ONECLAW_AGENT_TOKEN` (a JWT from `POST /v1/auth/agent-token`) and `ONECLAW_VAULT_ID`; the token expires in about an hour and must be refreshed manually.
 - **The agent never sees its own credentials.** The MCP server reads them from the environment and uses them to authenticate API requests on behalf of the agent.
 - **Access is deny-by-default.** Even with valid credentials, the agent can only access secrets allowed by its policies.
 - **Secret values are fetched just-in-time** and should never be stored, echoed, or included in conversation summaries.
@@ -317,6 +317,7 @@ submit_transaction(to: "0x...", value: "0", chain: "ethereum", data: "0xa9059cbb
 ## Links
 
 - Dashboard: [1claw.xyz](https://1claw.xyz)
+- Status: [1claw.xyz/status](https://1claw.xyz/status)
 - Docs: [docs.1claw.xyz](https://docs.1claw.xyz)
 - SDK: [github.com/1clawAI/1claw-sdk](https://github.com/1clawAI/1claw-sdk)
 - MCP server: [@1claw/mcp on npm](https://www.npmjs.com/package/@1claw/mcp)
