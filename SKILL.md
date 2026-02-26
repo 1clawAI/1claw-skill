@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.0.7
+version: 1.0.8
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -131,11 +131,12 @@ curl -H "Authorization: Bearer $TOKEN" https://api.1claw.xyz/v1/vaults
 
 ### Agent auth flow
 
-1. Human registers an agent in the dashboard or via `POST /v1/agents` → receives `agent_id` + `api_key` (prefix `ocv_`).
-2. Agent exchanges credentials: `POST /v1/auth/agent-token` with `{ "agent_id": "<uuid>", "api_key": "<key>" }` → returns `{ "access_token": "<jwt>", "token_type": "bearer", "expires_in": 3600 }`.
-3. Agent uses `Authorization: Bearer <jwt>` on all subsequent requests.
-4. JWT scopes derive from the agent's access policies (path patterns). If no policies exist, scopes are empty (zero access). The agent's `vault_ids` are also included in the JWT — requests to unlisted vaults are rejected.
-5. Token TTL defaults to ~1 hour but can be set per-agent via `token_ttl_seconds`. The MCP server auto-refreshes 60s before expiry.
+1. Human registers an agent in the dashboard or via `POST /v1/agents` with an `auth_method` (`api_key` default, `mtls`, or `oidc_client_credentials`). For `api_key` agents → receives `agent_id` + `api_key` (prefix `ocv_`). For mTLS/OIDC agents → receives `agent_id` only (no API key).
+2. All agents auto-receive an Ed25519 SSH keypair (public key on agent record, private key in `__agent-keys` vault).
+3. API key agents exchange credentials: `POST /v1/auth/agent-token` with `{ "agent_id": "<uuid>", "api_key": "<key>" }` → returns `{ "access_token": "<jwt>", "token_type": "bearer", "expires_in": 3600 }`.
+4. Agent uses `Authorization: Bearer <jwt>` on all subsequent requests.
+5. JWT scopes derive from the agent's access policies (path patterns). If no policies exist, scopes are empty (zero access). The agent's `vault_ids` are also included in the JWT — requests to unlisted vaults are rejected.
+6. Token TTL defaults to ~1 hour but can be set per-agent via `token_ttl_seconds`. The MCP server auto-refreshes 60s before expiry.
 
 ### API key auth
 

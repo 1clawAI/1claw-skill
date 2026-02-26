@@ -1,6 +1,6 @@
 # 1Claw Skill for ClawHub
 
-**Version:** 1.0.7 · [View on ClawHub](https://clawhub.ai/kmjones1979/1claw)
+**Version:** 1.0.8 · [View on ClawHub](https://clawhub.ai/kmjones1979/1claw)
 
 An [OpenClaw](https://docs.openclaw.ai) skill that gives AI agents secure, HSM-backed secret management via [1Claw](https://1claw.xyz).
 
