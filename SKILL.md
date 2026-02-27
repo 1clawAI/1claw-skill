@@ -579,6 +579,8 @@ Agents **cannot** modify their own guardrails. Violations return 403 with a desc
 - **Agents cannot create email-based shares** (prevents phishing).
 - **Crypto proxy is opt-in.** When enabled, raw key reads are blocked.
 - **Transaction guardrails are human-controlled and server-enforced.**
+- **Token revocation:** `DELETE /v1/auth/token` (or SDK `auth.logout()`) revokes the current Bearer token; revoked tokens return 401.
+- **Request body limit:** 5MB max; larger requests return 413.
 
 ---
 
@@ -596,7 +598,8 @@ Agents **cannot** modify their own guardrails. Violations return 403 with a desc
 | 409 | Conflict | Resource already exists (e.g. duplicate vault name) |
 | 410 | Gone | Secret expired or max access count reached — ask user to store a new version |
 | 422 | Validation error or simulation reverted | Check input. For `simulate_first`: transaction would revert |
-| 429 | Rate limited | Wait and retry. Share creation: 10/min/org |
+| 413 | Payload too large | Request body over 5MB — reduce payload size |
+| 429 | Rate limited | Wait and retry. Auth routes: 5 req burst, 1/sec. Share creation: 10/min/org |
 
 All error responses include a `detail` field with a human-readable message.
 
