@@ -64,6 +64,18 @@ metadata:
 
 ## Setup
 
+### Option 0: Self-enrollment (new agents)
+
+If you don't have credentials yet, self-enroll — this sends them to your human:
+
+```bash
+curl -s -X POST https://api.1claw.xyz/v1/agents/enroll \
+  -H "Content-Type: application/json" \
+  -d '{"name":"my-agent","human_email":"human@example.com"}'
+```
+
+The human receives the Agent ID + API key by email. They then configure policies for your access.
+
 ### Option 1: MCP server (recommended for AI agents)
 
 Add to your MCP client configuration. The server auto-refreshes JWT tokens.
@@ -262,7 +274,7 @@ Simulate an EVM transaction via Tenderly without signing. Returns balance change
 
 ### submit_transaction
 
-Submit an EVM transaction for signing and optional broadcast. Requires `crypto_proxy_enabled`.
+Submit an EVM transaction for signing and optional broadcast. Requires `intents_api_enabled`.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -335,7 +347,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET` | `/v1/agents` | List agents → `{ agents: [...] }` |
 | `GET` | `/v1/agents/{id}` | Get agent |
 | `GET` | `/v1/agents/me` | Get current agent (self) |
-| `PATCH` | `/v1/agents/{id}` | Update agent (is_active, scopes, crypto_proxy_enabled, guardrails) |
+| `PATCH` | `/v1/agents/{id}` | Update agent (is_active, scopes, intents_api_enabled, guardrails) |
 | `DELETE` | `/v1/agents/{id}` | Delete agent → `204` |
 | `POST` | `/v1/agents/{id}/rotate-key` | Rotate agent API key → `{ api_key: "ocv_..." }` |
 
@@ -360,7 +372,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `DELETE` | `/v1/share/{id}` | Revoke a share |
 | `GET` | `/v1/share/{id}` | Access a share (public, may require passphrase) |
 
-### Crypto Proxy (requires `crypto_proxy_enabled`)
+### Intents API (requires `intents_api_enabled`)
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -421,10 +433,10 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `secrets` | `list(vaultId, prefix?)` | List secret metadata |
 | `secrets` | `delete(vaultId, key)` | Delete secret |
 | `secrets` | `rotate(vaultId, key, newValue)` | Rotate secret to new version |
-| `agents` | `create({ name, description?, scopes?, expires_at?, crypto_proxy_enabled?, token_ttl_seconds?, vault_ids? })` | Create agent → returns agent + api_key |
+| `agents` | `create({ name, description?, scopes?, expires_at?, intents_api_enabled?, token_ttl_seconds?, vault_ids? })` | Create agent → returns agent + api_key |
 | `agents` | `get(agentId)` | Get agent |
 | `agents` | `list()` | List agents |
-| `agents` | `update(agentId, { is_active?, scopes?, crypto_proxy_enabled?, tx_*? })` | Update agent |
+| `agents` | `update(agentId, { is_active?, scopes?, intents_api_enabled?, tx_*? })` | Update agent |
 | `agents` | `delete(agentId)` | Delete agent |
 | `agents` | `rotateKey(agentId)` | Rotate agent API key |
 | `agents` | `submitTransaction(agentId, { to, value, chain, ... })` | Submit EVM transaction |
@@ -534,11 +546,11 @@ Enterprise opt-in feature (Business tier and above). A human generates a 256-bit
 
 Agents reading from a CMEK vault receive the encrypted blob. The CMEK key is required to decrypt client-side. This is designed for organizations with compliance requirements — the default HSM encryption is already strong.
 
-### Crypto transaction proxy
+### Intents API
 
-When `crypto_proxy_enabled = true` (set by a human):
+When `intents_api_enabled = true` (set by a human):
 
-1. Agent **gains** transaction signing via the crypto proxy (keys stay in HSM)
+1. Agent **gains** transaction signing via the Intents API (keys stay in HSM)
 2. Agent is **blocked** from reading `private_key` and `ssh_key` secrets directly (403)
 
 Default signing key path: `keys/{chain}-signer`. Override with `signing_key_path`.
@@ -557,7 +569,7 @@ GET endpoints (`/v1/agents/{id}/transactions` and `/v1/agents/{id}/transactions/
 
 ### Transaction guardrails
 
-Human-configured, server-enforced limits on what the crypto proxy allows:
+Human-configured, server-enforced limits on what the Intents API allows:
 
 | Guardrail | Field | Effect |
 |-----------|-------|--------|
@@ -577,7 +589,7 @@ Agents **cannot** modify their own guardrails. Violations return 403 with a desc
 - **Access is deny-by-default.** Even with valid credentials, only policy-allowed secrets are accessible.
 - **Secret values are fetched just-in-time** and must never be stored, echoed, or included in summaries.
 - **Agents cannot create email-based shares** (prevents phishing).
-- **Crypto proxy is opt-in.** When enabled, raw key reads are blocked.
+- **Intents API is opt-in.** When enabled, raw key reads are blocked.
 - **Transaction guardrails are human-controlled and server-enforced.**
 - **Token revocation:** `DELETE /v1/auth/token` (or SDK `auth.logout()`) revokes the current Bearer token; revoked tokens return 401.
 - **Request body limit:** 5MB max; larger requests return 413.
