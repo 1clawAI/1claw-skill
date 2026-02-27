@@ -364,9 +364,9 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/v1/agents/{id}/transactions` | Submit transaction for signing |
-| `GET` | `/v1/agents/{id}/transactions` | List agent's transactions |
-| `GET` | `/v1/agents/{id}/transactions/{txid}` | Get transaction details |
+| `POST` | `/v1/agents/{id}/transactions` | Submit transaction for signing. Optional `Idempotency-Key` header for replay protection (24h TTL) |
+| `GET` | `/v1/agents/{id}/transactions` | List agent's transactions. `signed_tx` redacted unless `?include_signed_tx=true` |
+| `GET` | `/v1/agents/{id}/transactions/{txid}` | Get transaction details. `signed_tx` redacted unless `?include_signed_tx=true` |
 | `POST` | `/v1/agents/{id}/transactions/simulate` | Simulate single transaction |
 | `POST` | `/v1/agents/{id}/transactions/simulate-bundle` | Simulate transaction bundle |
 
@@ -542,6 +542,18 @@ When `crypto_proxy_enabled = true` (set by a human):
 2. Agent is **blocked** from reading `private_key` and `ssh_key` secrets directly (403)
 
 Default signing key path: `keys/{chain}-signer`. Override with `signing_key_path`.
+
+#### Replay protection (Idempotency-Key)
+
+Include an `Idempotency-Key: <unique-string>` header on `POST /v1/agents/{id}/transactions`. The server SHA-256 hashes the key and caches the result for 24 hours. Duplicate submissions with the same key return the cached response instead of re-signing and re-broadcasting. If two concurrent requests share a key, one returns 409 (retry after a moment).
+
+#### Server-side nonce serialization
+
+When `nonce` is omitted from a transaction request, the server resolves it automatically via `eth_getTransactionCount` (pending) and serializes concurrent callers with `SELECT FOR UPDATE`. This prevents two in-flight submissions from the same agent+chain+address from receiving the same nonce. You can still pass an explicit `nonce` to override.
+
+#### signed_tx field gating
+
+GET endpoints (`/v1/agents/{id}/transactions` and `/v1/agents/{id}/transactions/{txid}`) **redact** the `signed_tx` field by default to reduce exfiltration risk. To include it, pass `?include_signed_tx=true`. The initial POST response always includes `signed_tx` for the originating caller.
 
 ### Transaction guardrails
 
