@@ -350,6 +350,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `PATCH` | `/v1/agents/{id}` | Update agent (is_active, scopes, intents_api_enabled, guardrails) |
 | `DELETE` | `/v1/agents/{id}` | Delete agent → `204` |
 | `POST` | `/v1/agents/{id}/rotate-key` | Rotate agent API key → `{ api_key: "ocv_..." }` |
+| `POST` | `/v1/agents/{id}/rotate-identity-keys` | Rotate agent SSH + ECDH keypairs (user-only; keys in `__agent-keys` vault) |
 
 ### Policies (Access Control)
 
@@ -602,7 +603,7 @@ Agents **cannot** modify their own guardrails. Violations return 403 with a desc
 |------|---------|--------|
 | 400 | Bad request | Check request body format |
 | 401 | Not authenticated | Token expired — re-authenticate |
-| 402 | Quota exhausted / payment required | Inform user to top up credits or upgrade at `1claw.xyz/settings/billing` |
+| 402 | Quota exhausted / payment required | Body may include `required_usd`, `message`. Intents submit over quota: 0.25% of tx value; top up credits or send X-PAYMENT for required amount. Otherwise upgrade at `1claw.xyz/settings/billing` |
 | 403 | No permission | Ask user to grant access via a policy. Or: guardrail violation (check error detail) |
 | 403 | Resource limit reached (`type: "resource_limit_exceeded"`) | Tier limit on vaults/secrets/agents hit — ask user to upgrade at `1claw.xyz/settings/billing` |
 | 404 | Not found | Check path with `list_secrets` |
