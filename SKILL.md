@@ -47,6 +47,7 @@ metadata:
 1Claw is a cloud HSM-backed secrets manager. Agents access API keys, passwords, and credentials at runtime without them ever entering the conversation context. Secrets are encrypted with keys that never leave the HSM.
 
 **API base URL:** `https://api.1claw.xyz`
+**Shroud (TEE proxy):** `https://shroud.1claw.xyz`
 **MCP endpoint:** `https://mcp.1claw.xyz/mcp`
 **Dashboard:** `https://1claw.xyz`
 **Docs:** `https://docs.1claw.xyz`
@@ -59,6 +60,7 @@ metadata:
 - You need to rotate a credential after regenerating it
 - You want to check what secrets are available before using one
 - You need to sign or simulate an EVM transaction without exposing private keys
+- You want TEE-grade key isolation for transaction signing (use Shroud at `shroud.1claw.xyz`)
 
 ---
 
