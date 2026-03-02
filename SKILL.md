@@ -24,7 +24,8 @@ metadata:
                             "label": "1Claw MCP Server",
                         },
                     ],
-                "credentials": ["ONECLAW_AGENT_ID", "ONECLAW_AGENT_API_KEY", "ONECLAW_VAULT_ID"],
+                "credentials": ["ONECLAW_AGENT_API_KEY"],
+                "optional_credentials": ["ONECLAW_AGENT_ID", "ONECLAW_VAULT_ID"],
                 "permissions":
                     [
                         "vault:read",
@@ -91,7 +92,7 @@ The human receives the Agent ID + API key by email. They then configure policies
 
 ### Option 1: MCP server (recommended for AI agents)
 
-Add to your MCP client configuration. The server auto-refreshes JWT tokens.
+Add to your MCP client configuration. Only the API key is required — agent ID and vault are auto-discovered.
 
 ```json
 {
@@ -100,14 +101,14 @@ Add to your MCP client configuration. The server auto-refreshes JWT tokens.
             "command": "npx",
             "args": ["-y", "@1claw/mcp"],
             "env": {
-                "ONECLAW_AGENT_ID": "<agent-uuid>",
-                "ONECLAW_AGENT_API_KEY": "<agent-api-key>",
-                "ONECLAW_VAULT_ID": "<vault-uuid>"
+                "ONECLAW_AGENT_API_KEY": "<agent-api-key>"
             }
         }
     }
 }
 ```
+
+Optional overrides: `ONECLAW_AGENT_ID` (explicit agent), `ONECLAW_VAULT_ID` (explicit vault).
 
 Hosted HTTP streaming mode:
 
@@ -129,7 +130,6 @@ import { createClient } from "@1claw/sdk";
 
 const client = createClient({
     baseUrl: "https://api.1claw.xyz",
-    agentId: process.env.ONECLAW_AGENT_ID,
     apiKey: process.env.ONECLAW_AGENT_API_KEY,
 });
 ```
@@ -139,10 +139,12 @@ const client = createClient({
 Authenticate, then pass the Bearer token on every request.
 
 ```bash
-# Exchange agent credentials for a JWT
-TOKEN=$(curl -s -X POST https://api.1claw.xyz/v1/auth/agent-token \
+# Exchange agent API key for a JWT (key-only — agent_id is auto-resolved)
+RESP=$(curl -s -X POST https://api.1claw.xyz/v1/auth/agent-token \
   -H "Content-Type: application/json" \
-  -d '{"agent_id":"<uuid>","api_key":"<key>"}' | jq -r .access_token)
+  -d '{"api_key":"<key>"}')
+TOKEN=$(echo "$RESP" | jq -r .access_token)
+AGENT_ID=$(echo "$RESP" | jq -r .agent_id)
 
 # Use the JWT
 curl -H "Authorization: Bearer $TOKEN" https://api.1claw.xyz/v1/vaults
@@ -158,7 +160,7 @@ curl -H "Authorization: Bearer $TOKEN" https://api.1claw.xyz/v1/vaults
 
 1. Human registers an agent in the dashboard or via `POST /v1/agents` with an `auth_method` (`api_key` default, `mtls`, or `oidc_client_credentials`). For `api_key` agents → receives `agent_id` + `api_key` (prefix `ocv_`). For mTLS/OIDC agents → receives `agent_id` only (no API key).
 2. All agents auto-receive an Ed25519 SSH keypair (public key on agent record, private key in `__agent-keys` vault).
-3. API key agents exchange credentials: `POST /v1/auth/agent-token` with `{ "agent_id": "<uuid>", "api_key": "<key>" }` → returns `{ "access_token": "<jwt>", "token_type": "bearer", "expires_in": 3600 }`.
+3. API key agents exchange credentials: `POST /v1/auth/agent-token` with `{ "api_key": "<key>" }` (or `{ "agent_id": "<uuid>", "api_key": "<key>" }`) → returns `{ "access_token": "<jwt>", "expires_in": 3600, "agent_id": "<uuid>", "vault_ids": ["..."] }`. Agent ID is optional — the server resolves it from the key prefix.
 4. Agent uses `Authorization: Bearer <jwt>` on all subsequent requests.
 5. JWT scopes derive from the agent's access policies (path patterns). If no policies exist, scopes are empty (zero access). The agent's `vault_ids` are also included in the JWT — requests to unlisted vaults are rejected.
 6. Token TTL defaults to ~1 hour but can be set per-agent via `token_ttl_seconds`. The MCP server auto-refreshes 60s before expiry.
