@@ -71,9 +71,20 @@ metadata:
 If you don't have credentials yet, self-enroll — this sends them to your human:
 
 ```bash
+# curl
 curl -s -X POST https://api.1claw.xyz/v1/agents/enroll \
   -H "Content-Type: application/json" \
   -d '{"name":"my-agent","human_email":"human@example.com"}'
+
+# TypeScript SDK (static method, no auth needed)
+import { AgentsResource } from "@1claw/sdk";
+await AgentsResource.enroll("https://api.1claw.xyz", {
+  name: "my-agent",
+  human_email: "human@example.com",
+});
+
+# CLI (no auth needed)
+npx @1claw/cli agent enroll my-agent --email human@example.com
 ```
 
 The human receives the Agent ID + API key by email. They then configure policies for your access.
@@ -582,6 +593,43 @@ Human-configured, server-enforced limits on what the Intents API allows:
 | Allowed chains | `tx_allowed_chains` | Chain names. Empty = all chains |
 
 Agents **cannot** modify their own guardrails. Violations return 403 with a descriptive error.
+
+---
+
+## Share with Your Human
+
+Agents can share secrets back with the human who created or enrolled them. Use `recipient_type: "creator"` — no email or user ID needed.
+
+**Via MCP:**
+
+```
+share_secret(secret_id: "...", recipient_type: "creator", expires_at: "2026-12-31T00:00:00Z")
+```
+
+**Via SDK:**
+
+```typescript
+await client.sharing.create(secretId, {
+  recipient_type: "creator",
+  expires_at: "2026-12-31T00:00:00Z",
+  max_access_count: 5,
+});
+```
+
+The human sees the share in their Inbound shares and accepts it. This is the primary pattern for agents that discover or generate credentials and need to report them to their human.
+
+---
+
+## Fleet Patterns
+
+When many agents operate in the same organization:
+
+- **Vault organization:** Use a shared vault with path-scoped policies (e.g. `agents/{name}/**`) or per-agent vaults for strict isolation.
+- **Bulk provisioning:** Use the authenticated `POST /v1/agents` endpoint with a human API key to create many agents, or stagger self-enrollment calls to respect the 10-min per-email cooldown.
+- **Vault binding:** Set `vault_ids` on each agent to restrict JWT scope beyond what policies allow.
+- **Token TTL:** Shorten to 5 min for ephemeral tasks (`token_ttl_seconds: 300`), keep default 1h for long-running agents.
+- **Transaction guardrails:** Apply `tx_max_value_eth`, `tx_daily_limit_eth`, and `tx_allowed_chains` to all Intents API agents.
+- **Monitoring:** Filter the audit log by agent ID to track per-agent activity. Use `billing usage` to monitor org-wide consumption.
 
 ---
 
