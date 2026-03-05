@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.0.8
+version: 1.0.9
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -595,6 +595,59 @@ Human-configured, server-enforced limits on what the Intents API allows:
 | Allowed chains | `tx_allowed_chains` | Chain names. Empty = all chains |
 
 Agents **cannot** modify their own guardrails. Violations return 403 with a descriptive error.
+
+### Shroud per-agent LLM proxy
+
+When `shroud_enabled = true` (set by a human), the agent's LLM traffic is routed through Shroud (`shroud.1claw.xyz`) for secret redaction, PII scrubbing, prompt injection defense, and policy enforcement inside a TEE.
+
+`shroud_config` is an optional JSON object that lets humans fine-tune the proxy behavior per agent:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pii_policy` | `"block"` \| `"redact"` \| `"warn"` \| `"allow"` | How PII in LLM traffic is handled |
+| `injection_threshold` | number (0.0–1.0) | Prompt injection detection sensitivity |
+| `context_injection_threshold` | number (0.0–1.0) | Context injection detection sensitivity |
+| `allowed_providers` | string[] | LLM providers the agent may use (empty = all) |
+| `allowed_models` | string[] | Models the agent may use (empty = all) |
+| `denied_models` | string[] | Models explicitly blocked |
+| `max_tokens_per_request` | number | Token cap per LLM request |
+| `max_requests_per_minute` | number | Per-minute rate limit |
+| `max_requests_per_day` | number | Per-day rate limit |
+| `daily_budget_usd` | number | Daily LLM spend cap in USD |
+| `enable_secret_redaction` | boolean | Redact vault secrets from LLM context |
+| `enable_response_filtering` | boolean | Filter sensitive data from LLM responses |
+
+**SDK:**
+
+```typescript
+await client.agents.create({
+  name: "my-agent",
+  shroud_enabled: true,
+  shroud_config: {
+    pii_policy: "redact",
+    injection_threshold: 0.8,
+    allowed_providers: ["openai", "anthropic"],
+    max_requests_per_day: 1000,
+    daily_budget_usd: 10.0,
+    enable_secret_redaction: true,
+  },
+});
+
+await client.agents.update(agentId, {
+  shroud_enabled: true,
+  shroud_config: { pii_policy: "block", injection_threshold: 0.9 },
+});
+```
+
+**CLI:**
+
+```bash
+1claw agent create my-agent --shroud
+1claw agent update <agent-id> --shroud true
+1claw agent update <agent-id> --shroud false
+```
+
+**MCP:** When `shroud_enabled` is true, the agent can send LLM requests through `shroud.1claw.xyz`. The Shroud proxy enforces the agent's `shroud_config` policy automatically — no client-side changes needed.
 
 ---
 
