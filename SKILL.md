@@ -773,7 +773,7 @@ When many agents operate in the same organization:
 - **The agent never sees its own credentials.** The MCP server authenticates on the agent's behalf.
 - **Access is deny-by-default.** Even with valid credentials, only policy-allowed secrets are accessible.
 - **Secret values are fetched just-in-time** and must never be stored, echoed, or included in summaries.
-- **Agents cannot create email-based shares** (prevents phishing).
+- **Agents cannot create email-based shares** (prevents unsolicited email sharing).
 - **Intents API is opt-in.** When enabled, raw key reads are blocked.
 - **Transaction guardrails are human-controlled and server-enforced.**
 - **Token revocation:** `DELETE /v1/auth/token` (or SDK `auth.logout()`) revokes the current Bearer token; revoked tokens return 401.

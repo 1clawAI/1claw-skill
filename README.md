@@ -2,7 +2,7 @@
 
 **Version:** 1.0.8 · [View on ClawHub](https://clawhub.ai/kmjones1979/1claw)
 
-An [OpenClaw](https://docs.openclaw.ai) skill that gives AI agents secure, HSM-backed secret management via [1Claw](https://1claw.xyz).
+An [OpenClaw](https://docs.openclaw.ai) skill that gives AI agents secure, HSM-backed secret management via [1Claw](https://1claw.xyz). Official skill; source: [github.com/1clawAI/1claw](https://github.com/1clawAI/1claw). Credential-related terms (API key, secret, token) are expected — the skill teaches agents to use the 1Claw vault, not to exfiltrate credentials.
 
 ## What it does
 
