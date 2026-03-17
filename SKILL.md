@@ -323,7 +323,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | ------ | ----------------------- | ----------------------------------------------------- |
 | `POST` | `/v1/auth/token`        | Login (email + password) → `{ access_token }`         |
 | `POST` | `/v1/auth/agent-token`  | Agent login (agent_id + api_key) → `{ access_token }` |
-| `POST` | `/v1/auth/google`       | Google OAuth                                          |
+| `POST` | `/v1/auth/google`       | Google OAuth (ID token verified via JWKS)             |
 | `POST` | `/v1/auth/signup`       | Create account → sends verification email             |
 | `POST` | `/v1/auth/verify-email` | Verify email token → creates user                     |
 | `POST` | `/v1/auth/mfa/verify`   | Verify MFA code during login                          |
@@ -575,7 +575,7 @@ When `intents_api_enabled = true` (set by a human):
 1. Agent **gains** transaction signing via the Intents API (keys stay in HSM)
 2. Agent is **blocked** from reading `private_key` and `ssh_key` secrets directly (403)
 
-Default signing key path: `keys/{chain}-signer`. Override with `signing_key_path`.
+Default signing key path: `keys/{chain}-signer`. Override with `signing_key_path` (restricted to `keys/*`, `wallets/*`, or `agents/{id}/keys/*` — other paths are rejected to prevent arbitrary secret exfiltration).
 
 #### Replay protection (Idempotency-Key)
 
