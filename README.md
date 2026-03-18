@@ -1,12 +1,12 @@
 # 1Claw Skill for ClawHub
 
-**Version:** 1.0.8 · [View on ClawHub](https://clawhub.ai/kmjones1979/1claw)
+**Version:** 1.2.0 · [View on ClawHub](https://clawhub.ai/kmjones1979/1claw)
 
 An [OpenClaw](https://docs.openclaw.ai) skill that gives AI agents secure, HSM-backed secret management via [1Claw](https://1claw.xyz). Official skill; source: [github.com/1clawAI/1claw](https://github.com/1clawAI/1claw). Credential-related terms (API key, secret, token) are expected — the skill teaches agents to use the 1Claw vault, not to exfiltrate credentials.
 
 ## What it does
 
-Teaches agents to store, retrieve, rotate, and share secrets using the 1Claw vault. Secrets are encrypted with hardware security modules and fetched just-in-time — they never persist in conversation context.
+Teaches agents to store, retrieve, rotate, and share secrets using the 1Claw vault. Secrets are encrypted with hardware security modules and fetched just-in-time — they never persist in conversation context. Also covers Treasury: Safe multisig wallets, agent EVM addresses, Smart Account deployment (ERC-4337), and agent access requests.
 
 ## Files
 

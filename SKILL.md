@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.1.0
+version: 1.2.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -68,6 +68,8 @@ metadata:
 - You want to check what secrets are available before using one
 - You need to sign or simulate an EVM transaction without exposing private keys
 - You want TEE-grade key isolation for transaction signing (use Shroud at `shroud.1claw.xyz`)
+- You need to request access to a Safe multisig treasury (agent access requests)
+- You want to manage or deploy agent EVM addresses and Safe smart accounts (ERC-4337)
 
 ---
 
@@ -428,6 +430,20 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET`  | `/v1/chains`              | List supported chains |
 | `GET`  | `/v1/chains/{name_or_id}` | Get chain details     |
 
+### Treasury (Safe multisig, agent access)
+
+| Method   | Path                                                                 | Description                                      |
+| -------- | -------------------------------------------------------------------- | ------------------------------------------------ |
+| `POST`   | `/v1/treasury`                                                       | Create treasury (Safe multisig)                  |
+| `GET`    | `/v1/treasury`                                                       | List treasuries                                  |
+| `GET`    | `/v1/treasury/{treasury_id}`                                         | Get treasury details                             |
+| `POST`   | `/v1/treasury/{treasury_id}/signers`                                | Add signer to treasury                           |
+| `DELETE` | `/v1/treasury/{treasury_id}/signers/{signer_id}`                     | Remove signer from treasury                      |
+| `POST`   | `/v1/treasury/{treasury_id}/access-requests`                         | Request access (agent-only; requires EVM address) |
+| `GET`    | `/v1/treasury/{treasury_id}/access-requests`                         | List access requests (human approves/denies)     |
+| `POST`   | `/v1/treasury/{treasury_id}/access-requests/{request_id}/approve`    | Approve access request                           |
+| `POST`   | `/v1/treasury/{treasury_id}/access-requests/{request_id}/deny`       | Deny access request                               |
+
 ### Other
 
 | Method             | Path                           | Description                                        |
@@ -489,6 +505,13 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `apiKeys` | `revoke(keyId)`                                                                                              | Revoke key                             |
 | `chains`  | `list()`                                                                                                     | List supported chains                  |
 | `chains`  | `get(identifier)`                                                                                            | Get chain by name or ID                |
+| `treasury`| `create({ name, chain, chain_id, threshold?, safe_address? })`                                               | Create treasury (Safe multisig)         |
+| `treasury`| `list()`, `get(treasuryId)`                                                                                  | List/get treasuries                   |
+| `treasury`| `addSigner(treasuryId, { signer_type, signer_id?, signer_address? })`                                        | Add signer to treasury                 |
+| `treasury`| `removeSigner(treasuryId, signerId)`                                                                         | Remove signer                          |
+| `treasury`| `requestAccess(treasuryId, { reason })`                                                                      | Request access (agent-only)            |
+| `treasury`| `listAccessRequests(treasuryId)`                                                                             | List access requests                   |
+| `treasury`| `approveAccess(treasuryId, requestId)`, `denyAccess(treasuryId, requestId)`                                   | Approve or deny access request        |
 | `org`     | `listMembers()`                                                                                              | List org members                       |
 | `org`     | `updateMemberRole(userId, role)`                                                                             | Update member role                     |
 | `org`     | `removeMember(userId)`                                                                                       | Remove member                          |
