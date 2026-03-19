@@ -437,10 +437,12 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST`   | `/v1/treasury`                                                       | Create treasury (Safe multisig)                  |
 | `GET`    | `/v1/treasury`                                                       | List treasuries                                  |
 | `GET`    | `/v1/treasury/{treasury_id}`                                         | Get treasury details                             |
+| `PATCH`  | `/v1/treasury/{treasury_id}`                                         | Update name and/or threshold                       |
+| `DELETE` | `/v1/treasury/{treasury_id}`                                         | Delete treasury                                    |
 | `POST`   | `/v1/treasury/{treasury_id}/signers`                                | Add signer to treasury                           |
 | `DELETE` | `/v1/treasury/{treasury_id}/signers/{signer_id}`                     | Remove signer from treasury                      |
 | `POST`   | `/v1/treasury/{treasury_id}/access-requests`                         | Request access (agent-only; requires EVM address) |
-| `GET`    | `/v1/treasury/{treasury_id}/access-requests`                         | List access requests (human approves/denies)     |
+| `GET`    | `/v1/treasury/{treasury_id}/access-requests`                         | List access requests → `{ requests: [...] }`       |
 | `POST`   | `/v1/treasury/{treasury_id}/access-requests/{request_id}/approve`    | Approve access request                           |
 | `POST`   | `/v1/treasury/{treasury_id}/access-requests/{request_id}/deny`       | Deny access request                               |
 
@@ -505,9 +507,9 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `apiKeys` | `revoke(keyId)`                                                                                              | Revoke key                             |
 | `chains`  | `list()`                                                                                                     | List supported chains                  |
 | `chains`  | `get(identifier)`                                                                                            | Get chain by name or ID                |
-| `treasury`| `create({ name, chain, chain_id, threshold?, safe_address? })`                                               | Create treasury (Safe multisig)         |
-| `treasury`| `list()`, `get(treasuryId)`                                                                                  | List/get treasuries                   |
-| `treasury`| `addSigner(treasuryId, { signer_type, signer_id?, signer_address? })`                                        | Add signer to treasury                 |
+| `treasury`| `create({ name, safe_address, chain?, chain_id?, threshold?, signers? })`                                     | Create treasury (Safe multisig)         |
+| `treasury`| `list()`, `get(treasuryId)`, `update(treasuryId, { name?, threshold? })`, `delete(treasuryId)`               | List/get/update/delete treasuries      |
+| `treasury`| `addSigner(treasuryId, { signer_type, signer_id, signer_address })`                                            | Add signer to treasury                 |
 | `treasury`| `removeSigner(treasuryId, signerId)`                                                                         | Remove signer                          |
 | `treasury`| `requestAccess(treasuryId, { reason })`                                                                      | Request access (agent-only)            |
 | `treasury`| `listAccessRequests(treasuryId)`                                                                             | List access requests                   |
