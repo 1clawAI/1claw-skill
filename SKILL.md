@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.2.0
+version: 1.3.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -68,6 +68,7 @@ metadata:
 - You want to check what secrets are available before using one
 - You need to sign or simulate an EVM transaction without exposing private keys
 - You want TEE-grade key isolation for transaction signing (use Shroud at `shroud.1claw.xyz`)
+- Your org uses **LLM token billing** (Stripe AI Gateway): enable in the dashboard; agent JWTs include `llm_token_billing` / `stripe_customer_id` for Shroud routing
 - You need to request access to a Safe multisig treasury (agent access requests)
 - You want to manage or deploy agent EVM addresses and Safe smart accounts (ERC-4337, one per chain; `POST /v1/agents/{id}/smart-accounts` to add a Safe)
 
