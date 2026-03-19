@@ -69,7 +69,7 @@ metadata:
 - You need to sign or simulate an EVM transaction without exposing private keys
 - You want TEE-grade key isolation for transaction signing (use Shroud at `shroud.1claw.xyz`)
 - You need to request access to a Safe multisig treasury (agent access requests)
-- You want to manage or deploy agent EVM addresses and Safe smart accounts (ERC-4337)
+- You want to manage or deploy agent EVM addresses and Safe smart accounts (ERC-4337, one per chain; `POST /v1/agents/{id}/smart-accounts` to add a Safe)
 
 ---
 
