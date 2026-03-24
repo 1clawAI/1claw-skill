@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.3.2
+version: 1.3.3
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -429,6 +429,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | Method  | Path                               | Description                                |
 | ------- | ---------------------------------- | ------------------------------------------ |
 | `GET`   | `/v1/billing/subscription`         | Subscription status, usage, credit balance |
+| `GET`   | `/v1/billing/llm-token-billing`    | LLM add-on status; optional `credit_balance`, `billing_cycle_usage.metered_lines` (Stripe preview) |
 | `GET`   | `/v1/billing/credits/balance`      | Credit balance + expiring credits          |
 | `GET`   | `/v1/billing/credits/transactions` | Credit transaction ledger                  |
 | `PATCH` | `/v1/billing/overage-method`       | Set overage method (`credits` or `x402`)   |
@@ -511,6 +512,7 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `audit`   | `query({ action?, actor_id?, from?, to?, limit?, offset? })`                                                 | Query audit events                     |
 | `billing` | `usage()`                                                                                                    | Current month usage                    |
 | `billing` | `history(limit?)`                                                                                            | Usage event history                    |
+| `billing` | `llmTokenBilling()`, `subscribeLlmTokenBilling()`, `disableLlmTokenBilling()`                               | LLM token billing add-on (Stripe AI Gateway) |
 | `auth`    | `login({ email, password })`                                                                                 | Human login                            |
 | `auth`    | `agentToken({ agent_id, api_key })`                                                                          | Agent JWT exchange                     |
 | `auth`    | `logout()`                                                                                                   | Revoke token                           |
