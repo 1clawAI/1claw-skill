@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.3.0
+version: 1.3.2
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -177,6 +177,17 @@ curl -H "Authorization: Bearer $TOKEN" https://api.1claw.xyz/v1/vaults
 ### API key auth
 
 Tokens starting with `1ck_` (human personal API keys) or `ocv_` (agent API keys) can be used as Bearer tokens directly on any authenticated endpoint.
+
+### Human password reset (email/password accounts)
+
+- Dashboard: **Forgot password?** on the login page → email link → `/reset-password?token=…`.
+- API: `POST /v1/auth/forgot-password` `{ "email" }` and `POST /v1/auth/reset-password` `{ "token", "new_password" }` (public; forgot returns a generic message).
+- CLI: `1claw forgot-password`, `1claw reset-password` (use `--api-url` for self-hosted).
+
+### Shroud & Intents hosts
+
+- **Shroud** (`shroud.1claw.xyz`): TEE LLM proxy + transaction signing; full Intents API surface.
+- **Intents** (`intents.1claw.xyz`): Additional ingress for signing/health checks; production smoke tests hit `/healthz`.
 
 ---
 
