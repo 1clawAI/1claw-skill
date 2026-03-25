@@ -765,7 +765,7 @@ await client.agents.update(agentId, {
 1claw agent update <agent-id> --shroud false
 ```
 
-**MCP:** When `shroud_enabled` is true, the agent can send LLM requests through `shroud.1claw.xyz`. The Shroud proxy enforces the agent's `shroud_config` policy automatically — no client-side changes needed.
+**MCP:** When `shroud_enabled` is true, the agent can send LLM requests through `shroud.1claw.xyz`. Vault puts `shroud_config` on the **agent JWT**; Shroud applies it in **PolicyEngine** after the inspection pipeline (re-exchange credentials after changing Shroud settings). MCP vault tools are unchanged; LLM traffic does not go through MCP.
 
 ---
 
