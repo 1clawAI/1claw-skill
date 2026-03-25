@@ -679,6 +679,8 @@ Multi-layered detection for prompt injection, command injection, social engineer
 | `sanitization_mode`            | string | `"block"` (reject threats), `"sanitize"` (strip), `"warn"` (log)    |
 | `threat_logging`               | boolean| Log detected threats for audit (default: true)                      |
 
+**Extended inspection pipeline** — Beyond the threat detectors above, `shroud_config` also supports: `tool_call_inspection` (scan function/tool call arguments, block credential exfiltration), `output_policy` (block harmful content, patterns, and entities in LLM responses), `secret_injection_detection` (detect secrets injected into prompts/responses), `advanced_redaction` (detect base64-encoded, split, or prefix-leaked secrets), and `semantic_policy` (enforce allowed/denied topics and tasks at the intent level). `flagged_request_retention_days` controls how long flagged requests are retained. Dashboard: `/shroud-activity` (overview), `/shroud-activity/threats`, `/shroud-activity/live` (real-time inspector).
+
 **`unicode_normalization` object:**
 
 | Field                | Type    | Default | Description                                    |
