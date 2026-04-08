@@ -68,6 +68,7 @@ metadata:
 - You want to check what secrets are available before using one
 - You need to sign or simulate an EVM transaction without exposing private keys
 - You want TEE-grade key isolation for transaction signing (use Shroud at `shroud.1claw.xyz`)
+- Your vault uses **MPC secret storage** — DEKs split across GCP/AWS/Azure HSMs (Shamir 2-of-3) or XOR 2-of-2 client custody; provide `X-Client-Share` header when reading from client-custody vaults
 - Your org uses **LLM token billing** (Stripe AI Gateway): enable in the dashboard; agent JWTs include `llm_token_billing` / `stripe_customer_id` for Shroud routing
 - You need to request access to a Safe multisig treasury (agent access requests)
 - You want to manage or deploy agent EVM addresses and Safe smart accounts (ERC-4337, one per chain; `POST /v1/agents/{id}/smart-accounts` to add a Safe)
