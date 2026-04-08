@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.3.3
+version: 1.4.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -326,6 +326,71 @@ Submit an EVM transaction for signing and optional broadcast. Requires `intents_
 | `max_priority_fee_per_gas` | string  | no       |                       | EIP-1559 priority fee in wei              |
 | `simulate_first`           | boolean | no       | true                  | Run Tenderly simulation before signing    |
 
+### sign_transaction
+
+Sign an EVM transaction without broadcasting. Returns `signed_tx` hex + `tx_hash` + `from` address. Same guardrails as `submit_transaction`.
+
+| Parameter                  | Type    | Required | Default               | Description                               |
+| -------------------------- | ------- | -------- | --------------------- | ----------------------------------------- |
+| `to`                       | string  | yes      |                       | Destination address                       |
+| `value`                    | string  | yes      |                       | Value in ETH                              |
+| `chain`                    | string  | yes      |                       | Chain name or chain ID                    |
+| `data`                     | string  | no       |                       | Hex-encoded calldata                      |
+| `signing_key_path`         | string  | no       | `keys/{chain}-signer` | Vault path to signing key                 |
+| `nonce`                    | number  | no       | auto-resolved         | Transaction nonce                         |
+| `gas_price`                | string  | no       |                       | Gas price in wei (legacy mode)            |
+| `gas_limit`                | number  | no       | 21000                 | Gas limit                                 |
+| `max_fee_per_gas`          | string  | no       |                       | EIP-1559 max fee in wei (triggers Type 2) |
+| `max_priority_fee_per_gas` | string  | no       |                       | EIP-1559 priority fee in wei              |
+
+### list_transactions
+
+List an agent's past transactions. Returns transaction history with status, chain, value, and timestamps.
+
+No parameters required (uses the authenticated agent's context).
+
+### get_transaction
+
+Get details of a specific transaction.
+
+| Parameter | Type   | Required | Description    |
+| --------- | ------ | -------- | -------------- |
+| `tx_id`   | string | yes      | Transaction ID |
+
+### simulate_bundle
+
+Simulate multiple EVM transactions as a sequence via Tenderly. Returns per-transaction results.
+
+| Parameter      | Type   | Required | Description                                                         |
+| -------------- | ------ | -------- | ------------------------------------------------------------------- |
+| `transactions` | array  | yes      | Array of transaction objects (same fields as `simulate_transaction`) |
+
+### inspect_content
+
+Inspect text content through the Shroud security pipeline. Returns threat detections and policy violations without sending to an LLM.
+
+| Parameter | Type   | Required | Description             |
+| --------- | ------ | -------- | ----------------------- |
+| `content` | string | yes      | Text content to inspect |
+
+### rotate_generate
+
+Generate a new random value and rotate a secret to it. Combines generation and rotation in one step.
+
+| Parameter | Type   | Required | Default   | Description                  |
+| --------- | ------ | -------- | --------- | ---------------------------- |
+| `path`    | string | yes      |           | Secret path                  |
+| `type`    | string | no       | `api_key` | Secret type                  |
+| `length`  | number | no       | 32        | Length of the generated value |
+
+### list_versions
+
+List all versions of a secret. Returns version numbers, timestamps, and status.
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| `path`    | string | yes      | Secret path |
+
 ---
 
 ## REST API Quick Reference
@@ -374,6 +439,10 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET`    | `/v1/vaults/{id}/secrets/{path}`     | Read secret → `{ path, type, value, version, metadata }`                                   |
 | `DELETE` | `/v1/vaults/{id}/secrets/{path}`     | Delete secret → `204`                                                                      |
 | `GET`    | `/v1/vaults/{id}/secrets?prefix=...` | List secrets (metadata only, no values)                                                    |
+| `GET`    | `/v1/vaults/{id}/secret-versions/{path}` | List all versions of a secret                                                          |
+| `GET`    | `/v1/vaults/{id}/secret-version/{path}/{version}` | Get a specific secret version                                                  |
+| `POST`   | `/v1/vaults/{id}/secret-versions/{path}/disable` | Disable a secret version                                                        |
+| `POST`   | `/v1/vaults/{id}/secret-rotate/{path}` | Server-side secret rotation                                                            |
 
 ### Agents
 
@@ -414,10 +483,19 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | Method | Path                                           | Description                                                                                       |
 | ------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `POST` | `/v1/agents/{id}/transactions`                 | Submit transaction for signing. Optional `Idempotency-Key` header for replay protection (24h TTL) |
+| `POST` | `/v1/agents/{id}/transactions/sign`            | Sign transaction without broadcasting (returns `signed_tx`, `tx_hash`, `from`)                    |
 | `GET`  | `/v1/agents/{id}/transactions`                 | List agent's transactions. `signed_tx` redacted unless `?include_signed_tx=true`                  |
 | `GET`  | `/v1/agents/{id}/transactions/{txid}`          | Get transaction details. `signed_tx` redacted unless `?include_signed_tx=true`                    |
 | `POST` | `/v1/agents/{id}/transactions/simulate`        | Simulate single transaction                                                                       |
 | `POST` | `/v1/agents/{id}/transactions/simulate-bundle` | Simulate transaction bundle                                                                       |
+
+### Shroud Activity
+
+| Method | Path                       | Description                                          |
+| ------ | -------------------------- | ---------------------------------------------------- |
+| `GET`  | `/v1/shroud/activity`      | List recent Shroud inspection events                 |
+| `POST` | `/v1/shroud/activity`      | Query filtered Shroud activity                       |
+| `GET`  | `/v1/shroud/threat-summary`| Shroud threat detection summary                      |
 
 ### Audit
 
@@ -677,7 +755,7 @@ Multi-layered detection for prompt injection, command injection, social engineer
 | `encoding_detection`           | object | Detect base64, hex, Unicode escapes that may hide payloads          |
 | `network_detection`            | object | Detect blocked domains, IP URLs, data exfiltration patterns         |
 | `filesystem_detection`         | object | Detect sensitive paths (/etc/passwd, .ssh/, .env, etc.)             |
-| `sanitization_mode`            | string | `"block"` (reject threats), `"sanitize"` (strip), `"warn"` (log)    |
+| `sanitization_mode`            | string | `"block"` (reject threats), `"surgical"` (strip), `"log_only"` (log) |
 | `threat_logging`               | boolean| Log detected threats for audit (default: true)                      |
 
 **Extended inspection pipeline** — Beyond the threat detectors above, `shroud_config` also supports: `tool_call_inspection` (scan function/tool call arguments, block credential exfiltration), `output_policy` (block harmful content, patterns, and entities in LLM responses), `secret_injection_detection` (detect secrets injected into prompts/responses), `advanced_redaction` (detect base64-encoded, split, or prefix-leaked secrets), and `semantic_policy` (enforce allowed/denied topics and tasks at the intent level). `flagged_request_retention_days` controls how long flagged requests are retained. Dashboard: `/shroud-activity` (overview), `/shroud-activity/threats`, `/shroud-activity/live` (real-time inspector).

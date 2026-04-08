@@ -6,12 +6,12 @@
 
 | Variable                | Required | Description                                                |
 | ----------------------- | -------- | ---------------------------------------------------------- |
-| `ONECLAW_AGENT_ID`      | Yes\*    | Agent UUID                                                 |
-| `ONECLAW_AGENT_API_KEY` | Yes\*    | Agent API key (`ocv_...`). Auto-refreshes JWT.             |
-| `ONECLAW_VAULT_ID`      | Yes      | UUID of the vault to operate on                            |
+| `ONECLAW_AGENT_API_KEY` | Yes      | Agent API key (`ocv_...`). Auto-refreshes JWT.             |
+| `ONECLAW_AGENT_ID`      | No       | Agent UUID (auto-discovered from token exchange)           |
+| `ONECLAW_VAULT_ID`      | No       | UUID of the vault to operate on (auto-discovered from token exchange) |
 | `ONECLAW_BASE_URL`      | No       | API URL (default: `https://api.1claw.xyz`)                 |
 
-\*Or use `ONECLAW_AGENT_TOKEN` (static JWT, expires ~1h) instead of agent ID + API key.
+Only `ONECLAW_AGENT_API_KEY` is required. Agent ID and vault are auto-discovered from the token exchange response. Alternatively, use `ONECLAW_AGENT_TOKEN` (static JWT, expires ~1h) + `ONECLAW_VAULT_ID` for legacy mode.
 
 ### MCP server (stdio mode — legacy: static JWT)
 
