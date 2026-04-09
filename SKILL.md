@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.4.0
+version: 1.4.1
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -119,6 +119,8 @@ Add to your MCP client configuration. Only the API key is required — agent ID 
 ```
 
 Optional overrides: `ONECLAW_AGENT_ID` (explicit agent), `ONECLAW_VAULT_ID` (explicit vault).
+
+**stdio refresh:** The MCP server rebuilds its Vault API client from **current** environment variables on **each tool call** (no long-lived cached client tied to startup env), so updating `ONECLAW_VAULT_ID` or keys in the client config takes effect without restarting the process.
 
 Hosted HTTP streaming mode:
 
