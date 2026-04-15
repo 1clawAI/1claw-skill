@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.4.1
+version: 1.5.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -419,6 +419,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `DELETE` | `/v1/auth/me`              | Delete account (body: `{ "confirmation": "DELETE MY ACCOUNT" }`) |
 | `DELETE` | `/v1/auth/token`           | Revoke current token                                             |
 | `POST`   | `/v1/auth/change-password` | Change password                                                  |
+| `POST`   | `/v1/auth/export-data`     | GDPR data export (returns JSON archive of user's personal data)  |
 
 ### Vaults
 
@@ -899,6 +900,10 @@ When many agents operate in the same organization:
 - **Intents API is opt-in.** When enabled, raw key reads are blocked.
 - **Transaction guardrails are human-controlled and server-enforced.**
 - **Token revocation:** `DELETE /v1/auth/token` (or SDK `auth.logout()`) revokes the current Bearer token; revoked tokens return 401.
+- **Agent token auto-revocation:** When a policy is created, updated, or deleted for an agent, all active JWTs for that agent are revoked immediately (stale-scope protection via `agent_active_tokens` table).
+- **KMS key rotation scheduling:** GCP KMS keys support scheduled automatic rotation; production uses HSM protection level (`protection_level: 2`).
+- **CRC32C integrity verification:** KMS encrypt/decrypt responses are verified with CRC32C checksums to detect data corruption in transit.
+- **Audit insert hardening:** Direct `INSERT` on `audit_events` is revoked from the application DB role; all audit writes go through a `SECURITY DEFINER` function (`insert_audit_event`) to prevent RLS bypass.
 - **Request body limit:** 5MB max; larger requests return 413.
 
 ---
