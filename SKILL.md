@@ -79,7 +79,9 @@ metadata:
 
 ### Option 0: Self-enrollment (new agents)
 
-If you don't have credentials yet, self-enroll — this sends them to your human:
+If you don't have credentials yet, self-enroll. The API creates a **pending** enrollment; the human **approves** in the dashboard (or via the emailed link). After approval, the API key is emailed.
+
+**With the human's email** — Allow/Deny links are emailed, and the JSON response usually includes **`approval_url`** as a fallback if mail is delayed or lost:
 
 ```bash
 # curl
@@ -98,7 +100,17 @@ await AgentsResource.enroll("https://api.1claw.xyz", {
 npx @1claw/cli agent enroll my-agent --email human@example.com
 ```
 
-The human receives the Agent ID + API key by email. They then configure policies for your access.
+**Name only** (omit `human_email`) — response includes **`approval_url`**; the human opens it while signed in to approve into their org (no email required to start):
+
+```bash
+curl -s -X POST https://api.1claw.xyz/v1/agents/enroll \
+  -H "Content-Type: application/json" \
+  -d '{"name":"my-agent"}'
+
+npx @1claw/cli agent enroll my-agent
+```
+
+The human receives the Agent ID + API key by email after approval. They then configure policies for your access.
 
 ### Option 1: MCP server (recommended for AI agents)
 

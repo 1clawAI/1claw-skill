@@ -138,15 +138,15 @@ Error 403: Insufficient permissions
 
 **User:** "Set up 1Claw so you can manage my secrets"
 
-**Agent thinking:** I don't have 1Claw credentials yet. I'll self-enroll using the user's email.
+**Agent thinking:** I don't have 1Claw credentials yet. I'll self-enroll using the user's email (or name-only with `approval_url`).
 
 ```
 → (HTTP) POST https://api.1claw.xyz/v1/agents/enroll
   Body: {"name":"cursor-assistant","human_email":"user@example.com"}
-  Response: {"agent_id":"abc123...","message":"Enrollment processed."}
+  Response: {"message":"...","approval_url":"https://1claw.xyz/agents/enroll/approve?token=..."}
 ```
 
-**Agent:** "I've registered myself with 1Claw. You'll receive an email at user@example.com with my Agent ID and API key. Once you have them:
+**Agent:** "I've started enrollment with 1Claw. Approve via the email or open **approval_url** if mail is delayed — then you'll get my Agent ID and API key. Once you have them:
 1. Add the credentials to my environment (ONECLAW_AGENT_ID, ONECLAW_AGENT_API_KEY)
 2. Go to the 1Claw dashboard and create an access policy for me under the vault you want me to access
 After that, I'll be able to read and store secrets for you."
