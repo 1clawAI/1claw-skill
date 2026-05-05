@@ -1,7 +1,7 @@
 ---
 name: 1claw
-version: 1.6.0
-description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context.
+version: 1.7.0
+description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
 metadata:
@@ -419,10 +419,13 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | ------ | ----------------------- | ----------------------------------------------------- |
 | `POST` | `/v1/auth/token`        | Login (email + password) → `{ access_token }`         |
 | `POST` | `/v1/auth/agent-token`  | Agent login (agent_id + api_key) → `{ access_token }` |
+| `POST` | `/v1/auth/federated-token` | RFC 8693 token exchange → RS256 JWT for external relying parties |
 | `POST` | `/v1/auth/google`       | Google OAuth (ID token verified via JWKS)             |
 | `POST` | `/v1/auth/signup`       | Create account → sends verification email             |
 | `POST` | `/v1/auth/verify-email` | Verify email token → creates user                     |
 | `POST` | `/v1/auth/mfa/verify`   | Verify MFA code during login                          |
+| `GET`  | `/.well-known/openid-configuration` | OIDC discovery (issuer, jwks_uri, supported algs) |
+| `GET`  | `/.well-known/jwks.json` | Public JWKS (EdDSA + RS256 key versions, keyed by `kid`) |
 
 ### Auth (authenticated)
 
@@ -736,6 +739,48 @@ Human-configured, server-enforced limits on what the Intents API allows:
 | Allowed chains       | `tx_allowed_chains`  | Chain names. Empty = all chains                       |
 
 Agents **cannot** modify their own guardrails. Violations return 403 with a descriptive error.
+
+### OIDC Federation (1Claw as Identity Provider)
+
+1claw publishes a standard OpenID Connect issuer at `https://api.1claw.xyz`, so external relying parties (Anthropic Workload Identity Federation, GCP STS, AWS STS, Stytch, etc.) can validate 1claw-issued JWTs without static API keys.
+
+- **Discovery:** `GET https://api.1claw.xyz/.well-known/openid-configuration` advertises `issuer`, `jwks_uri`, `id_token_signing_alg_values_supported: ["EdDSA","RS256"]`, and grant types incl. `urn:ietf:params:oauth:grant-type:token-exchange`.
+- **JWKS:** `GET https://api.1claw.xyz/.well-known/jwks.json` lists every active EdDSA + RS256 KMS key version, each keyed by a deterministic `kid` (`eddsa-vN`, `rs256-vN`). Cached for 5 minutes; CORS `*`.
+- **Token exchange:** `POST /v1/auth/federated-token` (RFC 8693). Subject token can be a regular agent JWT or an `ocv_` API key. Returns an **RS256-signed** JWT (HSM-backed RSA 2048) with the requested `aud`. Default TTL 15 min, hard cap 60 min.
+
+**Per-agent guardrails (zero-trust by default):**
+
+| Field                          | Type     | Default | Description                                                            |
+| ------------------------------ | -------- | ------- | ---------------------------------------------------------------------- |
+| `federation_enabled`           | boolean  | false   | When true, agent may call `/v1/auth/federated-token`                    |
+| `federation_audiences`         | string[] | `[]`    | Allowlist of acceptable `aud` values. Empty = deny all federation requests |
+| `federated_token_ttl_seconds`  | number?  | null    | Per-agent TTL override (60–3600s). NULL falls back to global default    |
+
+**SDK:**
+
+```typescript
+const tokenResp = await client.auth.exchangeFederatedToken({
+    audience: "https://api.anthropic.com",
+    // subjectToken defaults to current client token / apiKey if omitted
+});
+console.log(tokenResp.data?.access_token); // RS256 JWT
+```
+
+**CLI:**
+
+```bash
+1claw auth federated-token --audience https://api.anthropic.com
+1claw auth federated-token -a https://api.anthropic.com --raw  # script-friendly
+```
+
+**Anthropic WIF flow:**
+
+1. Human enables `federation_enabled = true` and adds Anthropic to `federation_audiences` in the dashboard.
+2. Agent calls `POST /v1/auth/federated-token` (or `client.auth.exchangeFederatedToken`) with `audience: "https://api.anthropic.com"`.
+3. Agent posts the resulting JWT to Anthropic's WIF endpoint, which returns a short-lived `sk-ant-oat01-…` token.
+4. Agent calls Claude with that Anthropic token. **No static `ANTHROPIC_API_KEY` ever leaves 1claw or sits in env.**
+
+End-to-end demo: [`examples/anthropic-wif`](https://github.com/1clawAI/1claw-examples/tree/main/anthropic-wif).
 
 ### Shroud per-agent LLM proxy
 
