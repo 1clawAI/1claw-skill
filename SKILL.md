@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.7.0
+version: 1.8.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -972,6 +972,20 @@ When many agents operate in the same organization:
 - **Agent self-update guard:** Agents cannot `PATCH /v1/agents/{id}` on their own record — only human callers can modify agent settings.
 - **x402 unauthenticated amount verification:** The x402 middleware verifies payment amounts even for unauthenticated requests, preventing underpayment on public paid routes.
 - **Request body limit:** 5MB max; larger requests return 413.
+
+---
+
+## Scaling & Performance (v0.17)
+
+- **Database pool**: Configurable via `ONECLAW_POOL_MAX_CONNECTIONS` (default 5), `ONECLAW_POOL_MIN_CONNECTIONS` (default 0). Set `ONECLAW_POOL_DISABLE_STMT_CACHE=1` for Supavisor transaction-mode. Pool stats logged every 30s.
+- **Rate limiting**: Two-layer — in-memory L1 + optional Redis L2 (`ONECLAW_REDIS_URL`).
+- **DEK cache**: 60s TTL, 1000-entry DashMap cache for unwrapped DEKs. Cuts KMS calls ~80%.
+- **Usage batching**: Events buffered in memory, batch-INSERTs every 5s or 100 events.
+- **Manifest optimization**: `ETag`/`304` and `?since=` on `GET /v1/admin/secrets/manifest`.
+- **Cron leader election**: `pg_try_advisory_lock` prevents duplicate nightly jobs across replicas.
+- **Quota header caching**: 30s TTL per-org cache eliminates per-request DB lookups.
+- **Nonce serialization**: Shroud calls `POST /v1/admin/nonces/reserve` for DB-backed atomic nonce reservation (eliminates multi-pod collisions).
+- **HPA**: Custom `shroud_requests_per_second` metric via prometheus-adapter.
 
 ---
 
