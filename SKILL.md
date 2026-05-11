@@ -69,6 +69,8 @@ metadata:
 - You need to rotate a credential after regenerating it
 - You want to check what secrets are available before using one
 - You need to sign or simulate an EVM transaction without exposing private keys
+- You need to sign an EIP-191 personal message or EIP-712 typed data
+- You want to provision multi-chain signing keys (Ethereum, Bitcoin, Solana, XRP, Cardano, Tron)
 - You want TEE-grade key isolation for transaction signing (use Shroud at `shroud.1claw.xyz`)
 - Your vault uses **MPC secret storage** — DEKs split across GCP/AWS/Azure HSMs (Shamir 2-of-3) or XOR 2-of-2 client custody; provide `X-Client-Share` header when reading from client-custody vaults
 - Your org uses **LLM token billing** (Stripe AI Gateway): enable in the dashboard; agent JWTs include `llm_token_billing` / `stripe_customer_id` for Shroud routing
@@ -391,6 +393,45 @@ Inspect text content through the Shroud security pipeline. Returns threat detect
 | --------- | ------ | -------- | ----------------------- |
 | `content` | string | yes      | Text content to inspect |
 
+### list_signing_keys
+
+List all multi-chain signing keys for an agent. Returns key IDs, chains, curves, public keys, and addresses.
+
+| Parameter  | Type   | Required | Description                                |
+| ---------- | ------ | -------- | ------------------------------------------ |
+| `agent_id` | string | no       | Agent ID (uses authenticated agent if omitted) |
+
+### provision_signing_key
+
+Generate a signing key for an agent on a given blockchain. Returns the public key, on-chain address (when applicable), and key metadata. The private key is stored securely in the vault.
+
+| Parameter  | Type   | Required | Description                                               |
+| ---------- | ------ | -------- | --------------------------------------------------------- |
+| `agent_id` | string | no       | Agent ID (uses authenticated agent if omitted)            |
+| `chain`    | string | yes      | One of: ethereum, bitcoin, solana, xrp, cardano, tron     |
+
+### sign_message
+
+Sign a message using EIP-191 personal_sign. Agent must have `message_signing_enabled`.
+
+| Parameter          | Type   | Required | Default               | Description                              |
+| ------------------ | ------ | -------- | --------------------- | ---------------------------------------- |
+| `agent_id`         | string | no       |                       | Agent ID (uses authenticated agent if omitted) |
+| `message`          | string | yes      |                       | Hex-encoded message (0x-prefixed or raw) |
+| `chain`            | string | no       | `ethereum`            | Chain name                               |
+| `signing_key_path` | string | no       | `keys/{chain}-signer` | Vault path to signing key                |
+
+### sign_typed_data
+
+Sign EIP-712 typed structured data. Agent must pass EIP-712 guardrail enforcement (domain allowlist).
+
+| Parameter          | Type   | Required | Default               | Description                                    |
+| ------------------ | ------ | -------- | --------------------- | ---------------------------------------------- |
+| `agent_id`         | string | no       |                       | Agent ID (uses authenticated agent if omitted) |
+| `typed_data`       | object | yes      |                       | EIP-712 object (types, primaryType, domain, message) |
+| `chain`            | string | no       | `ethereum`            | Chain name                                     |
+| `signing_key_path` | string | no       | `keys/{chain}-signer` | Vault path to signing key                      |
+
 ### rotate_generate
 
 Generate a new random value and rotate a secret to it. Combines generation and rotation in one step.
@@ -502,14 +543,19 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 
 ### Intents API (requires `intents_api_enabled`)
 
-| Method | Path                                           | Description                                                                                       |
-| ------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `POST` | `/v1/agents/{id}/transactions`                 | Submit transaction for signing. Optional `Idempotency-Key` header for replay protection (24h TTL) |
-| `POST` | `/v1/agents/{id}/transactions/sign`            | Sign transaction without broadcasting (returns `signed_tx`, `tx_hash`, `from`)                    |
-| `GET`  | `/v1/agents/{id}/transactions`                 | List agent's transactions. `signed_tx` redacted unless `?include_signed_tx=true`                  |
-| `GET`  | `/v1/agents/{id}/transactions/{txid}`          | Get transaction details. `signed_tx` redacted unless `?include_signed_tx=true`                    |
-| `POST` | `/v1/agents/{id}/transactions/simulate`        | Simulate single transaction                                                                       |
-| `POST` | `/v1/agents/{id}/transactions/simulate-bundle` | Simulate transaction bundle                                                                       |
+| Method   | Path                                               | Description                                                                                       |
+| -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `POST`   | `/v1/agents/{id}/transactions`                     | Submit transaction for signing. Optional `Idempotency-Key` header for replay protection (24h TTL) |
+| `POST`   | `/v1/agents/{id}/transactions/sign`                | Sign transaction without broadcasting (returns `signed_tx`, `tx_hash`, `from`)                    |
+| `POST`   | `/v1/agents/{id}/sign`                             | Unified signing intent: `personal_sign` (EIP-191), `typed_data` (EIP-712), or `transaction` (types 0–4) |
+| `GET`    | `/v1/agents/{id}/transactions`                     | List agent's transactions. `signed_tx` redacted unless `?include_signed_tx=true`                  |
+| `GET`    | `/v1/agents/{id}/transactions/{txid}`              | Get transaction details. `signed_tx` redacted unless `?include_signed_tx=true`                    |
+| `POST`   | `/v1/agents/{id}/transactions/simulate`            | Simulate single transaction                                                                       |
+| `POST`   | `/v1/agents/{id}/transactions/simulate-bundle`     | Simulate transaction bundle                                                                       |
+| `POST`   | `/v1/agents/{id}/signing-keys`                     | Provision a multi-chain signing key (`{ chain }`) — human-only                                    |
+| `GET`    | `/v1/agents/{id}/signing-keys`                     | List all signing keys for an agent                                                                |
+| `POST`   | `/v1/agents/{id}/signing-keys/{chain}/rotate`      | Rotate signing key for a chain — human-only                                                       |
+| `DELETE` | `/v1/agents/{id}/signing-keys/{chain}`             | Deactivate signing key for a chain — human-only                                                   |
 
 ### Shroud Activity
 
@@ -598,6 +644,11 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `agents`  | `simulateBundle(agentId, bundle)`                                                                            | Simulate transaction bundle            |
 | `agents`  | `getTransaction(agentId, txId)`                                                                              | Get transaction                        |
 | `agents`  | `listTransactions(agentId)`                                                                                  | List agent transactions                |
+| `agents`  | `signIntent(agentId, { intent_type, chain, message?, typed_data?, tx_type?, ... })`                          | Unified signing (EIP-191, EIP-712, EIP-2718 types 0–4) |
+| `signingKeys` | `create(agentId, { chain })`                                                                             | Provision a multi-chain signing key    |
+| `signingKeys` | `list(agentId)`                                                                                          | List all signing keys for an agent     |
+| `signingKeys` | `rotate(agentId, chain)`                                                                                 | Rotate signing key for a chain         |
+| `signingKeys` | `deactivate(agentId, chain)`                                                                             | Deactivate signing key                 |
 | `access`  | `grantAgent(vaultId, agentId, permissions, { path?, conditions?, expires_at? })`                             | Grant agent access                     |
 | `access`  | `grantHuman(vaultId, userId, permissions, { path?, conditions?, expires_at? })`                              | Grant user access                      |
 | `access`  | `listGrants(vaultId)`                                                                                        | List policies                          |
@@ -715,7 +766,20 @@ When `intents_api_enabled = true` (set by a human):
 1. Agent **gains** transaction signing via the Intents API (keys stay in HSM)
 2. Agent is **blocked** from reading `private_key` and `ssh_key` secrets directly (403)
 
-Default signing key path: `keys/{chain}-signer`. Override with `signing_key_path` (restricted to `keys/*`, `wallets/*`, or `agents/{id}/keys/*` — other paths are rejected to prevent arbitrary secret exfiltration).
+Default signing key path: `keys/{chain}-signer`. Override with `signing_key_path` (restricted to `keys/*`, `wallets/*`, `agents/{id}/keys/*`, or `agents/{id}/chains/*` — other paths are rejected to prevent arbitrary secret exfiltration).
+
+#### Multi-chain signing keys (v0.18)
+
+Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), Bitcoin (secp256k1), Solana (Ed25519), XRP (Ed25519), Cardano (Ed25519), Tron (secp256k1). Private keys stored in `__agent-keys` vault at `agents/{id}/chains/{chain}/private_key`. Provisioned by humans only. Use `provision_signing_key` MCP tool or `client.signingKeys.create()`.
+
+#### Extended signing intents (v0.18)
+
+Unified `POST /v1/agents/{id}/sign` with `intent_type`:
+- `personal_sign` — EIP-191 message signing (requires `message_signing_enabled`)
+- `typed_data` — EIP-712 typed data signing (deny-by-default; dangerous types like Permit always require `eip712_domain_allowlist`)
+- `transaction` — EIP-2718 types 0–4 (legacy, EIP-2930, EIP-1559, EIP-4844, EIP-7702)
+
+Use `sign_message` and `sign_typed_data` MCP tools, or `client.agents.signIntent()`.
 
 #### Replay protection (Idempotency-Key)
 
