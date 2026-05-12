@@ -76,6 +76,7 @@ metadata:
 - Your org uses **LLM token billing** (Stripe AI Gateway): enable in the dashboard; agent JWTs include `llm_token_billing` / `stripe_customer_id` for Shroud routing
 - You need to request access to a Safe multisig treasury (agent access requests)
 - You want to manage or deploy agent EVM addresses and Safe smart accounts (ERC-4337, one per chain; `POST /v1/agents/{id}/smart-accounts` to add a Safe)
+- You want to generate native multi-chain treasury wallets (Ethereum, Bitcoin, Solana, XRP, Cardano, Tron) — human-only, Pro+ tier
 
 ---
 
@@ -606,6 +607,17 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST`   | `/v1/treasury/{treasury_id}/access-requests/{request_id}/approve`    | Approve access request                           |
 | `POST`   | `/v1/treasury/{treasury_id}/access-requests/{request_id}/deny`       | Deny access request                               |
 
+### Treasury Wallets (native multi-chain, human-only, Pro+)
+
+| Method   | Path                                     | Description                                               |
+| -------- | ---------------------------------------- | --------------------------------------------------------- |
+| `POST`   | `/v1/treasury/wallets/generate`          | Generate wallets for specified or all chains               |
+| `GET`    | `/v1/treasury/wallets`                   | List all active wallets for the calling user               |
+| `GET`    | `/v1/treasury/wallets/{chain}`           | Get wallet for a specific chain                            |
+| `POST`   | `/v1/treasury/wallets/{chain}/export`    | Export wallet with private key (audit-logged)              |
+| `POST`   | `/v1/treasury/wallets/{chain}/rotate`    | Rotate wallet keypair (deactivates old, creates new)       |
+| `DELETE` | `/v1/treasury/wallets/{chain}`           | Deactivate wallet                                          |
+
 ### Other
 
 | Method             | Path                           | Description                                        |
@@ -680,6 +692,12 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `treasury`| `requestAccess(treasuryId, { reason })`                                                                      | Request access (agent-only)            |
 | `treasury`| `listAccessRequests(treasuryId)`                                                                             | List access requests                   |
 | `treasury`| `approveAccess(treasuryId, requestId)`, `denyAccess(treasuryId, requestId)`                                   | Approve or deny access request        |
+| `treasuryWallets`| `generate({ chains? })`                                                                               | Generate multi-chain wallets (human-only, Pro+) |
+| `treasuryWallets`| `list()`                                                                                              | List active treasury wallets           |
+| `treasuryWallets`| `get(chain)`                                                                                          | Get wallet by chain                    |
+| `treasuryWallets`| `export(chain)`                                                                                       | Export wallet with private key         |
+| `treasuryWallets`| `rotate(chain)`                                                                                       | Rotate wallet keypair                  |
+| `treasuryWallets`| `deactivate(chain)`                                                                                   | Deactivate wallet                      |
 | `org`     | `listMembers()`                                                                                              | List org members                       |
 | `org`     | `updateMemberRole(userId, role)`                                                                             | Update member role                     |
 | `org`     | `removeMember(userId)`                                                                                       | Remove member                          |
@@ -1096,7 +1114,7 @@ All error responses include a `detail` field with a human-readable message.
 | Free       | 1,000       | 3         | 50        | 2         | $0                                           |
 | Pro        | 25,000      | 25        | 500       | 10        | $29/mo                                       |
 | Team       | 100,000     | 100       | 5,000     | 50        | $299/mo (SSO)                                |
-| Business   | 500,000     | Unlimited | Unlimited | 200       | $999/mo (+ CMEK, Intents, Shroud Enterprise) |
+| Business   | 500,000     | Unlimited | Unlimited | 200       | $999/mo (+ CMEK, Intents, Shroud Enterprise, Treasury Wallets) |
 | Enterprise | Custom      | Unlimited | Unlimited | Unlimited | Contact                                      |
 
 Overage methods: **prepaid credits** (top up via Stripe, deducted per request) or **x402 micropayments** (per-query on-chain payments on Base).
