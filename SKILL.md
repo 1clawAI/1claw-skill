@@ -641,7 +641,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST`   | `/v1/treasury/wallets/generate`          | Generate wallets for specified or all chains               |
 | `GET`    | `/v1/treasury/wallets`                   | List all active wallets for the calling user               |
 | `GET`    | `/v1/treasury/wallets/{chain}`           | Get wallet for a specific chain                            |
-| `POST`   | `/v1/treasury/wallets/{chain}/export`    | Export wallet with private key (audit-logged)              |
+| `POST`   | `/v1/treasury/wallets/{chain}/export`    | Export wallet with private key (requires `X-Auth-Confirm` password header; audit-logged) |
 | `POST`   | `/v1/treasury/wallets/{chain}/rotate`    | Rotate wallet keypair (deactivates old, creates new)       |
 | `DELETE` | `/v1/treasury/wallets/{chain}`           | Deactivate wallet                                          |
 
@@ -741,7 +741,7 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `treasuryWallets`| `generate({ chains? })`                                                                               | Generate multi-chain wallets (human-only, Pro+) |
 | `treasuryWallets`| `list()`                                                                                              | List active treasury wallets           |
 | `treasuryWallets`| `get(chain)`                                                                                          | Get wallet by chain                    |
-| `treasuryWallets`| `export(chain)`                                                                                       | Export wallet with private key         |
+| `treasuryWallets`| `export(chain, { password })`                                                                         | Export wallet with private key (requires password re-auth via `X-Auth-Confirm`) |
 | `treasuryWallets`| `rotate(chain)`                                                                                       | Rotate wallet keypair                  |
 | `treasuryWallets`| `deactivate(chain)`                                                                                   | Deactivate wallet                      |
 | `platform`| `createApp({ name, slug, billing_model?, auth_mode?, ... })`                                                  | Register platform app (returns plt_ key) |
