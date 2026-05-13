@@ -326,7 +326,7 @@ Simulate an EVM transaction via Tenderly without signing. Returns balance change
 | `value`            | string | yes      |                       | Value in ETH (e.g. `"0.01"`)                  |
 | `chain`            | string | yes      |                       | Chain name or chain ID (see Supported Chains) |
 | `data`             | string | no       |                       | Hex-encoded calldata                          |
-| `signing_key_path` | string | no       | `keys/{chain}-signer` | Vault path to signing key                     |
+| `signing_key_path` | string | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
 | `gas_limit`        | number | no       | 21000                 | Gas limit                                     |
 
 ### submit_transaction
@@ -339,7 +339,7 @@ Submit an EVM transaction for signing and optional broadcast. Requires `intents_
 | `value`                    | string  | yes      |                       | Value in ETH                              |
 | `chain`                    | string  | yes      |                       | Chain name or chain ID                    |
 | `data`                     | string  | no       |                       | Hex-encoded calldata                      |
-| `signing_key_path`         | string  | no       | `keys/{chain}-signer` | Vault path to signing key                 |
+| `signing_key_path`         | string  | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
 | `nonce`                    | number  | no       | auto-resolved         | Transaction nonce                         |
 | `gas_price`                | string  | no       |                       | Gas price in wei (legacy mode)            |
 | `gas_limit`                | number  | no       | 21000                 | Gas limit                                 |
@@ -357,7 +357,7 @@ Sign an EVM transaction without broadcasting. Returns `signed_tx` hex + `tx_hash
 | `value`                    | string  | yes      |                       | Value in ETH                              |
 | `chain`                    | string  | yes      |                       | Chain name or chain ID                    |
 | `data`                     | string  | no       |                       | Hex-encoded calldata                      |
-| `signing_key_path`         | string  | no       | `keys/{chain}-signer` | Vault path to signing key                 |
+| `signing_key_path`         | string  | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
 | `nonce`                    | number  | no       | auto-resolved         | Transaction nonce                         |
 | `gas_price`                | string  | no       |                       | Gas price in wei (legacy mode)            |
 | `gas_limit`                | number  | no       | 21000                 | Gas limit                                 |
@@ -420,7 +420,7 @@ Sign a message using EIP-191 personal_sign. Agent must have `message_signing_ena
 | `agent_id`         | string | no       |                       | Agent ID (uses authenticated agent if omitted) |
 | `message`          | string | yes      |                       | Hex-encoded message (0x-prefixed or raw) |
 | `chain`            | string | no       | `ethereum`            | Chain name                               |
-| `signing_key_path` | string | no       | `keys/{chain}-signer` | Vault path to signing key                |
+| `signing_key_path` | string | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
 
 ### sign_typed_data
 
@@ -431,7 +431,7 @@ Sign EIP-712 typed structured data. Agent must pass EIP-712 guardrail enforcemen
 | `agent_id`         | string | no       |                       | Agent ID (uses authenticated agent if omitted) |
 | `typed_data`       | object | yes      |                       | EIP-712 object (types, primaryType, domain, message) |
 | `chain`            | string | no       | `ethereum`            | Chain name                                     |
-| `signing_key_path` | string | no       | `keys/{chain}-signer` | Vault path to signing key                      |
+| `signing_key_path` | string | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
 
 ### rotate_generate
 
@@ -784,7 +784,7 @@ When `intents_api_enabled = true` (set by a human):
 1. Agent **gains** transaction signing via the Intents API (keys stay in HSM)
 2. Agent is **blocked** from reading `private_key` and `ssh_key` secrets directly (403)
 
-Default signing key path: `keys/{chain}-signer`. Override with `signing_key_path` (restricted to `keys/*`, `wallets/*`, `agents/{id}/keys/*`, or `agents/{id}/chains/*` — other paths are rejected to prevent arbitrary secret exfiltration).
+Default signing key path auto-resolves: if the agent has a per-chain signing key provisioned, uses `agents/{id}/chains/{chain}/private_key`; otherwise falls back to `keys/{chain}-signer`. Network names (e.g. `sepolia`, `base`) map to canonical signing key chains (e.g. `ethereum`) via `signing_key_chain_for()`. Override with `signing_key_path` (restricted to `keys/*`, `wallets/*`, `agents/{id}/keys/*`, or `agents/{id}/chains/*` — other paths are rejected to prevent arbitrary secret exfiltration).
 
 #### Multi-chain signing keys (v0.18)
 
