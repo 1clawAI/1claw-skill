@@ -77,6 +77,7 @@ metadata:
 - You need to request access to a Safe multisig treasury (agent access requests)
 - You want to manage or deploy agent EVM addresses and Safe smart accounts (ERC-4337, one per chain; `POST /v1/agents/{id}/smart-accounts` to add a Safe)
 - You want to generate native multi-chain treasury wallets (Ethereum, Bitcoin, Solana, XRP, Cardano, Tron) — human-only, Pro+ tier
+- You are building a platform integration on 1Claw (register a `plt_` platform app, create bootstrap templates, provision users via OIDC or email)
 
 ---
 
@@ -451,6 +452,32 @@ List all versions of a secret. Returns version numbers, timestamps, and status.
 | --------- | ------ | -------- | ----------- |
 | `path`    | string | yes      | Secret path |
 
+### platform_list_apps
+
+List all platform apps registered in the current organization. No parameters.
+
+### platform_create_app
+
+Register a new platform app. Returns the app record and a one-time `plt_` API key.
+
+| Parameter       | Type   | Required | Description                                      |
+| --------------- | ------ | -------- | ------------------------------------------------ |
+| `name`          | string | yes      | App display name                                 |
+| `slug`          | string | yes      | Unique slug (3–64 chars, lowercase, hyphens)     |
+| `description`   | string | no       | Short description                                |
+| `billing_model` | string | no       | `platform_pays` (default), `user_pays`, `hybrid` |
+| `auth_mode`     | string | no       | `silent`, `user_signin`, `configurable`          |
+
+### platform_bootstrap_user
+
+Bootstrap a connected platform user — provisions vaults, agents, and policies from a template. Returns a claim URL the user opens to activate their account.
+
+| Parameter       | Type   | Required | Description                                               |
+| --------------- | ------ | -------- | --------------------------------------------------------- |
+| `connection_id` | string | yes      | Connection ID from upsert_user or list_users              |
+| `template_id`   | string | no       | Template ID to provision from (uses app default if omitted) |
+| `return_to`     | string | no       | URL to redirect the user to after claiming                |
+
 ---
 
 ## REST API Quick Reference
@@ -618,6 +645,25 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST`   | `/v1/treasury/wallets/{chain}/rotate`    | Rotate wallet keypair (deactivates old, creates new)       |
 | `DELETE` | `/v1/treasury/wallets/{chain}`           | Deactivate wallet                                          |
 
+### Platform API (v0.20)
+
+| Method   | Path                                             | Description                                            |
+| -------- | ------------------------------------------------ | ------------------------------------------------------ |
+| `POST`   | `/v1/platform/apps`                              | Register platform app (user-only, returns `plt_` key)  |
+| `GET`    | `/v1/platform/apps`                              | List platform apps for org                             |
+| `GET`    | `/v1/platform/apps/{id}`                         | Get platform app                                       |
+| `PATCH`  | `/v1/platform/apps/{id}`                         | Update platform app                                    |
+| `DELETE` | `/v1/platform/apps/{id}`                         | Delete platform app                                    |
+| `POST`   | `/v1/platform/apps/{id}/templates`               | Create bootstrap template (JSON spec)                  |
+| `GET`    | `/v1/platform/apps/{id}/templates`               | List templates                                         |
+| `PATCH`  | `/v1/platform/apps/{id}/templates/{tid}`         | Update template                                        |
+| `DELETE` | `/v1/platform/apps/{id}/templates/{tid}`         | Delete template                                        |
+| `POST`   | `/v1/platform/users/upsert`                      | Provision/find user (platform-only, OIDC or email)     |
+| `POST`   | `/v1/platform/connections/{id}/bootstrap`        | Bootstrap resources from template                      |
+| `GET`    | `/v1/platform/apps/{id}/users`                   | List connected users                                   |
+| `GET`    | `/v1/platform/connected-apps`                    | List apps connected to calling user (user-only)        |
+| `DELETE` | `/v1/platform/connected-apps/{connection_id}`    | Disconnect from a platform app                         |
+
 ### Other
 
 | Method             | Path                           | Description                                        |
@@ -698,6 +744,16 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `treasuryWallets`| `export(chain)`                                                                                       | Export wallet with private key         |
 | `treasuryWallets`| `rotate(chain)`                                                                                       | Rotate wallet keypair                  |
 | `treasuryWallets`| `deactivate(chain)`                                                                                   | Deactivate wallet                      |
+| `platform`| `createApp({ name, slug, billing_model?, auth_mode?, ... })`                                                  | Register platform app (returns plt_ key) |
+| `platform`| `listApps()`                                                                                                 | List platform apps                     |
+| `platform`| `getApp(appId)`                                                                                              | Get platform app                       |
+| `platform`| `updateApp(appId, { ... })`                                                                                  | Update platform app                    |
+| `platform`| `deleteApp(appId)`                                                                                           | Delete platform app                    |
+| `platform`| `createTemplate(appId, { name, spec })`                                                                      | Create bootstrap template              |
+| `platform`| `listTemplates(appId)`                                                                                       | List templates                         |
+| `platform`| `upsertUser({ subject_token?, email? })`                                                                     | Provision/find user (platform-only)    |
+| `platform`| `bootstrapUser(connectionId, { template_id?, return_to? })`                                                  | Bootstrap from template                |
+| `platform`| `listConnectedApps()`                                                                                        | List connected apps (user-only)        |
 | `org`     | `listMembers()`                                                                                              | List org members                       |
 | `org`     | `updateMemberRole(userId, role)`                                                                             | Update member role                     |
 | `org`     | `removeMember(userId)`                                                                                       | Remove member                          |
