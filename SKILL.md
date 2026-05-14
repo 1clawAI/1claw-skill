@@ -1110,13 +1110,22 @@ When many agents operate in the same organization:
 - **Agent self-update guard:** Agents cannot `PATCH /v1/agents/{id}` on their own record — only human callers can modify agent settings.
 - **x402 unauthenticated amount verification:** The x402 middleware verifies payment amounts even for unauthenticated requests, preventing underpayment on public paid routes.
 - **Request body limit:** 5MB max; larger requests return 413.
+- **Nonce-based CSP:** Dashboard uses per-request cryptographic nonces with `'strict-dynamic'`; replaces previous `'unsafe-inline'` policy.
+- **CORS explicit header allowlist:** Fixed 14-header allowlist (no wildcard).
+- **Federation audience validation:** `validators.rs` blocks cloud metadata endpoints, private/loopback CIDRs, `.internal` hostnames, and localhost in production.
+- **Platform cross-org binding:** `upsert_user` enforces `user.org_id == app.org_id`.
+- **Nightly DEK re-wrap:** Re-encrypts DEKs under current primary KEK so old KMS versions can be destroyed.
+- **HTTP client timeouts:** RPC calls (10s) and Tenderly simulation (30s) prevent indefinite hangs.
+- **MCP secret cache:** 5-minute TTL, 1000-entry LRU, periodic cleanup.
+- **MCP httpStream rate limiting:** 60 req/min per IP on hosted HTTP streaming transport.
+- **Demo Shroud rate limiting:** 10 req/min per IP, requires authenticated session.
 
 ---
 
 ## Scaling & Performance (v0.17)
 
 - **Database pool**: Configurable via `ONECLAW_POOL_MAX_CONNECTIONS` (default 5), `ONECLAW_POOL_MIN_CONNECTIONS` (default 0). Set `ONECLAW_POOL_DISABLE_STMT_CACHE=1` for Supavisor transaction-mode. Pool stats logged every 30s.
-- **Rate limiting**: Two-layer — in-memory L1 + optional Redis L2 (`ONECLAW_REDIS_URL`).
+- **Rate limiting**: Two-layer — in-memory L1 + Redis L2 sliding window (`ONECLAW_REDIS_URL`). Both global and auth rate limiters fully wired to Redis L2.
 - **DEK cache**: 60s TTL, 1000-entry DashMap cache for unwrapped DEKs. Cuts KMS calls ~80%.
 - **Usage batching**: Events buffered in memory, batch-INSERTs every 5s or 100 events.
 - **Manifest optimization**: `ETag`/`304` and `?since=` on `GET /v1/admin/secrets/manifest`.
