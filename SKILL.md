@@ -1119,6 +1119,13 @@ When many agents operate in the same organization:
 - **MCP secret cache:** 5-minute TTL, 1000-entry LRU, periodic cleanup.
 - **MCP httpStream rate limiting:** 60 req/min per IP on hosted HTTP streaming transport.
 - **Demo Shroud rate limiting:** 10 req/min per IP, requires authenticated session.
+- **Platform OIDC JWKS SSRF prevention:** `validate_audience_url()` blocks SSRF via platform app `oidc_jwks_url` on create/update and inside `resolve_oidc_subject()`.
+- **DEK re-wrap concurrency guard:** Nightly re-wrap uses `WHERE wrapped_dek = $old` optimistic lock to prevent races with concurrent secret writes.
+- **IPv4-mapped IPv6 bypass fix:** `is_private_or_reserved()` checks `to_ipv4_mapped()`, ULA fc00::/7, link-local fe80::/10.
+- **Dashboard proxy auth hardening:** Bundler and demo routes require session cookie + per-IP rate limiting; use `x-vercel-forwarded-for` for reliable IP.
+- **Treasury export lockout integration:** Failed re-auth password on wallet export increments failed login attempts and triggers lockout at 10.
+- **Signing key path UUID binding:** `validate_signing_key_path` enforces caller agent UUID match on `agents/{uuid}/` paths.
+- **Platform OIDC audience enforcement:** `oidc_audience` column on platform apps (migration 089); enforced in JWT validation when set.
 
 ---
 
