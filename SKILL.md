@@ -470,7 +470,7 @@ Register a new platform app. Returns the app record and a one-time `plt_` API ke
 
 ### platform_bootstrap_user
 
-Bootstrap a connected platform user — provisions vaults, agents, and policies from a template. Returns a claim URL the user opens to activate their account.
+Bootstrap a connected platform user — provisions vaults, agents, policies, and signing keys from a template. Returns a claim URL the user opens to activate their account.
 
 | Parameter       | Type   | Required | Description                                               |
 | --------------- | ------ | -------- | --------------------------------------------------------- |
@@ -584,6 +584,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET`    | `/v1/agents/{id}/signing-keys`                     | List all signing keys for an agent                                                                |
 | `POST`   | `/v1/agents/{id}/signing-keys/{chain}/rotate`      | Rotate signing key for a chain — human-only                                                       |
 | `DELETE` | `/v1/agents/{id}/signing-keys/{chain}`             | Deactivate signing key for a chain — human-only                                                   |
+| `POST`   | `/v1/agents/{id}/signing-keys/{chain}/export`      | Export signing key with private key (requires `X-Auth-Confirm` password) — human-only              |
 
 ### Shroud Activity
 
@@ -650,17 +651,17 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | Method   | Path                                             | Description                                            |
 | -------- | ------------------------------------------------ | ------------------------------------------------------ |
 | `POST`   | `/v1/platform/apps`                              | Register platform app (user-only, returns `plt_` key)  |
-| `GET`    | `/v1/platform/apps`                              | List platform apps for org                             |
+| `GET`    | `/v1/platform/apps`                              | List platform apps for org → `{ apps: [...] }`         |
 | `GET`    | `/v1/platform/apps/{id}`                         | Get platform app                                       |
 | `PATCH`  | `/v1/platform/apps/{id}`                         | Update platform app                                    |
 | `DELETE` | `/v1/platform/apps/{id}`                         | Delete platform app                                    |
 | `POST`   | `/v1/platform/apps/{id}/templates`               | Create bootstrap template (JSON spec)                  |
-| `GET`    | `/v1/platform/apps/{id}/templates`               | List templates                                         |
+| `GET`    | `/v1/platform/apps/{id}/templates`               | List templates → `{ templates: [...] }`                |
 | `PATCH`  | `/v1/platform/apps/{id}/templates/{tid}`         | Update template                                        |
 | `DELETE` | `/v1/platform/apps/{id}/templates/{tid}`         | Delete template                                        |
 | `POST`   | `/v1/platform/users/upsert`                      | Provision/find user (platform-only, OIDC or email)     |
-| `POST`   | `/v1/platform/connections/{id}/bootstrap`        | Bootstrap resources from template                      |
-| `GET`    | `/v1/platform/apps/{id}/users`                   | List connected users                                   |
+| `POST`   | `/v1/platform/connections/{id}/bootstrap`        | Bootstrap resources from template (incl. signing keys) |
+| `GET`    | `/v1/platform/apps/{id}/users`                   | List connected users → `{ users: [...] }`              |
 | `GET`    | `/v1/platform/connected-apps`                    | List apps connected to calling user (user-only)        |
 | `DELETE` | `/v1/platform/connected-apps/{connection_id}`    | Disconnect from a platform app                         |
 
@@ -707,6 +708,7 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `signingKeys` | `list(agentId)`                                                                                          | List all signing keys for an agent     |
 | `signingKeys` | `rotate(agentId, chain)`                                                                                 | Rotate signing key for a chain         |
 | `signingKeys` | `deactivate(agentId, chain)`                                                                             | Deactivate signing key                 |
+| `signingKeys` | `export(agentId, chain, { password })`                                                                   | Export signing key with private key (requires password re-auth) |
 | `access`  | `grantAgent(vaultId, agentId, permissions, { path?, conditions?, expires_at? })`                             | Grant agent access                     |
 | `access`  | `grantHuman(vaultId, userId, permissions, { path?, conditions?, expires_at? })`                              | Grant user access                      |
 | `access`  | `listGrants(vaultId)`                                                                                        | List policies                          |
@@ -844,7 +846,7 @@ Default signing key path auto-resolves: if the agent has a per-chain signing key
 
 #### Multi-chain signing keys (v0.18)
 
-Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), Bitcoin (secp256k1), Solana (Ed25519), XRP (Ed25519), Cardano (Ed25519), Tron (secp256k1). Private keys stored in `__agent-keys` vault at `agents/{id}/chains/{chain}/private_key`. Provisioned by humans only. Use `provision_signing_key` MCP tool or `client.signingKeys.create()`.
+Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), Bitcoin (secp256k1), Solana (Ed25519), XRP (Ed25519), Cardano (Ed25519), Tron (secp256k1). Private keys stored in `__agent-keys` vault at `agents/{id}/chains/{chain}/private_key`. Provisioned by humans only. Use `provision_signing_key` MCP tool or `client.signingKeys.create()`. **Export**: `POST /v1/agents/{id}/signing-keys/{chain}/export` — human-only, requires `X-Auth-Confirm` password header; returns `{ private_key, public_key, address, curve, chain }`; audit-logged; failed re-auth triggers account lockout.
 
 #### Extended signing intents (v0.18)
 
