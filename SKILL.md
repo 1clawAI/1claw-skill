@@ -1197,6 +1197,18 @@ Audit, org, security, chain, billing, and auth endpoints are **free and never co
 
 ---
 
+## Security Hardening (v0.20.4)
+
+- **Scope validation** (EXT-C1): Agent scopes must be glob patterns (`secrets/*`), not permission strings (`vault.read`).
+- **Error sanitization** (EXT-L1): `sanitize_errors_middleware` replaces serde error details in 400/422 responses.
+- **Opaque Shroud redaction** (EXT-H1): Labels use SHA-256 hash prefix (`[REDACTED:#a1b2c3d4]`), not vault paths.
+- **JWT revocation on deletion** (EXT-H2): Agent deletion revokes all active JWTs.
+- **Idempotency body hash** (EXT-H3): Same `Idempotency-Key` with different body → 409 Conflict.
+- **Redaction entropy floor** (EXT-H4): Secrets < 8 chars or entropy < 3.0 excluded from Shroud automata.
+- **Bootstrap signing keys** (v0.20.3): Template `spec.signing_keys` auto-provisions per-chain keys.
+
+---
+
 ## Links
 
 - Dashboard: [1claw.xyz](https://1claw.xyz)
