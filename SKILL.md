@@ -661,6 +661,8 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `DELETE` | `/v1/platform/apps/{id}/templates/{tid}`         | Delete template                                        |
 | `POST`   | `/v1/platform/users/upsert`                      | Provision/find user (platform-only, OIDC or email)     |
 | `POST`   | `/v1/platform/connections/{id}/bootstrap`        | Bootstrap resources from template (incl. signing keys) |
+| `GET`    | `/v1/platform/claim/{token}`                     | Preview claim token (public, no auth)                  |
+| `POST`   | `/v1/platform/claim/{token}`                     | Redeem claim token (public; 409 reused, 410 expired)   |
 | `GET`    | `/v1/platform/apps/{id}/users`                   | List connected users → `{ users: [...] }`              |
 | `GET`    | `/v1/platform/connected-apps`                    | List apps connected to calling user (user-only)        |
 | `DELETE` | `/v1/platform/connected-apps/{connection_id}`    | Disconnect from a platform app                         |
@@ -755,6 +757,8 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `platform`| `listTemplates(appId)`                                                                                       | List templates                         |
 | `platform`| `upsertUser({ subject_token?, email? })`                                                                     | Provision/find user (platform-only)    |
 | `platform`| `bootstrapUser(connectionId, { template_id?, return_to? })`                                                  | Bootstrap from template                |
+| `platform`| `claimPreview(token)`                                                                                        | Preview claim token (public)           |
+| `platform`| `claimRedeem(token)`                                                                                         | Redeem claim token (public)            |
 | `platform`| `listConnectedApps()`                                                                                        | List connected apps (user-only)        |
 | `org`     | `listMembers()`                                                                                              | List org members                       |
 | `org`     | `updateMemberRole(userId, role)`                                                                             | Update member role                     |
