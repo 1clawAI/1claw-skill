@@ -470,7 +470,7 @@ Register a new platform app. Returns the app record and a one-time `plt_` API ke
 
 ### platform_bootstrap_user
 
-Bootstrap a connected platform user — provisions vaults, agents, policies, and signing keys from a template. Returns a claim URL the user opens to activate their account.
+Bootstrap a connected platform user — provisions vaults, agents, policies, and signing keys from a template. Returns a claim URL the user opens to activate their account. The response also includes `summary.agent_api_key` (one-time `ocv_` key) and `summary.signing_keys[]` (each with `chain`, `address`, `public_key`, `curve`).
 
 | Parameter       | Type   | Required | Description                                               |
 | --------------- | ------ | -------- | --------------------------------------------------------- |
@@ -532,7 +532,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET`    | `/v1/vaults/{id}/secrets?prefix=...` | List secrets (metadata only, no values)                                                    |
 | `GET`    | `/v1/vaults/{id}/secret-versions/{path}` | List all versions of a secret                                                          |
 | `GET`    | `/v1/vaults/{id}/secret-version/{path}/{version}` | Get a specific secret version                                                  |
-| `POST`   | `/v1/vaults/{id}/secret-versions/{path}/disable` | Disable a secret version                                                        |
+| `POST`   | `/v1/vaults/{id}/secret-version-disable/{path}/{version}` | Disable a secret version                                                        |
 | `POST`   | `/v1/vaults/{id}/secret-rotate/{path}` | Server-side secret rotation                                                            |
 
 ### Agents
