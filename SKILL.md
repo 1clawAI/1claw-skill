@@ -78,6 +78,8 @@ metadata:
 - You want to manage or deploy agent EVM addresses and Safe smart accounts (ERC-4337, one per chain; `POST /v1/agents/{id}/smart-accounts` to add a Safe)
 - You want to generate native multi-chain treasury wallets (Ethereum, Bitcoin, Solana, XRP, Cardano, Tron) — human-only, Pro+ tier
 - You are building a platform integration on 1Claw (register a `plt_` platform app, create bootstrap templates, provision users via OIDC or email)
+- You want to approve or reject pending agent actions from the mobile app (approval queue with risk tiers)
+- You are working with the 1Claw mobile companion app (Expo, React Native, passkey/biometric auth)
 
 ---
 
