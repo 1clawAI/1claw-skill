@@ -80,6 +80,8 @@ metadata:
 - You are building a platform integration on 1Claw (register a `plt_` platform app, create bootstrap templates, provision users via OIDC or email)
 - You want to approve or reject pending agent actions from the mobile app (approval queue with risk tiers)
 - You are working with the 1Claw mobile companion app (Expo, React Native, passkey/biometric auth)
+- You want to sign in with a passkey (WebAuthn, passwordless) or manage passkey credentials
+- You want to request a policy change as an agent (approval workflow, human-in-the-loop)
 
 ---
 
@@ -199,7 +201,9 @@ curl -H "Authorization: Bearer $TOKEN" https://api.1claw.xyz/v1/vaults
 
 ### API key auth
 
-Tokens starting with `1ck_` (human personal API keys) or `ocv_` (agent API keys) can be used as Bearer tokens directly on any authenticated endpoint.
+Tokens starting with `1ck_` (human personal API keys), `ocv_` (agent API keys), or `plt_` (platform API keys) can be used as Bearer tokens directly on any authenticated endpoint.
+
+All three key types support optional expiration via `api_key_expires_at`. Expired keys are rejected at authentication time with 401. Platform apps can rotate keys via `POST /v1/platform/apps/{id}/rotate-key`.
 
 ### Human password reset (email/password accounts)
 
@@ -497,6 +501,8 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST` | `/v1/auth/signup`       | Create account → sends verification email             |
 | `POST` | `/v1/auth/verify-email` | Verify email token → creates user                     |
 | `POST` | `/v1/auth/mfa/verify`   | Verify MFA code during login                          |
+| `POST` | `/v1/auth/passkeys/assert/begin` | Start passkey login (accepts `{ email }`)    |
+| `POST` | `/v1/auth/passkeys/assert/complete` | Complete passkey login → JWT              |
 | `GET`  | `/.well-known/openid-configuration` | OIDC discovery (issuer, jwks_uri, supported algs) |
 | `GET`  | `/.well-known/jwks.json` | Public JWKS (EdDSA + RS256 key versions, keyed by `kid`) |
 
@@ -509,6 +515,13 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `DELETE` | `/v1/auth/me`              | Delete account (body: `{ "confirmation": "DELETE MY ACCOUNT" }`) |
 | `DELETE` | `/v1/auth/token`           | Revoke current token                                             |
 | `POST`   | `/v1/auth/change-password` | Change password                                                  |
+| `POST`   | `/v1/auth/set-password`    | Set first password (platform OIDC/Google users only)             |
+| `POST`   | `/v1/auth/change-email`    | Initiate email change (sends code to new address)                |
+| `POST`   | `/v1/auth/verify-email-change` | Complete email change with verification code                 |
+| `POST`   | `/v1/auth/passkeys/register/begin` | Start passkey registration ceremony                    |
+| `POST`   | `/v1/auth/passkeys/register/complete` | Complete passkey registration                       |
+| `GET`    | `/v1/auth/passkeys`        | List registered passkeys                                         |
+| `DELETE` | `/v1/auth/passkeys/{id}`   | Delete a passkey                                                 |
 | `POST`   | `/v1/auth/export-data`     | GDPR data export (returns JSON archive of user's personal data)  |
 
 ### Vaults
@@ -596,6 +609,15 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST` | `/v1/shroud/activity`      | Query filtered Shroud activity                       |
 | `GET`  | `/v1/shroud/threat-summary`| Shroud threat detection summary                      |
 
+### Approvals
+
+| Method | Path                        | Description                                                    |
+| ------ | --------------------------- | -------------------------------------------------------------- |
+| `GET`  | `/v1/approvals`             | List approval requests (user-only, filterable by status)       |
+| `GET`  | `/v1/approvals/{id}`        | Get approval details                                           |
+| `POST` | `/v1/approvals/{id}/decide` | Approve or reject (auto-executes policy changes on approval)   |
+| `POST` | `/v1/approvals/request`     | Agent-initiated approval request (agent-only)                  |
+
 ### Audit
 
 | Method | Path                                                  | Description        |
@@ -666,6 +688,8 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET`    | `/v1/platform/claim/{token}`                     | Preview claim token (public, no auth)                  |
 | `POST`   | `/v1/platform/claim/{token}`                     | Redeem claim token (public; 409 reused, 410 expired)   |
 | `GET`    | `/v1/platform/apps/{id}/users`                   | List connected users → `{ users: [...] }`              |
+| `POST`   | `/v1/platform/apps/{id}/rotate-key`              | Rotate platform API key (optional `api_key_expires_at`) |
+| `POST`   | `/v1/platform/connections/{id}/reissue-claim`    | Reissue expired claim URL without re-provisioning      |
 | `GET`    | `/v1/platform/connected-apps`                    | List apps connected to calling user (user-only)        |
 | `DELETE` | `/v1/platform/connected-apps/{connection_id}`    | Disconnect from a platform app                         |
 
