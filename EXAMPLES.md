@@ -189,3 +189,35 @@ Found 5 secret(s):
 - **Env Bundles:** Production environment config (v1)
 
 Would you like me to check any of these or store something new?"
+
+## Example 12: Submit a treasury proposal
+
+**User:** "Send 0.5 ETH from our Safe to the marketing wallet"
+
+**Agent thinking:** The user wants me to propose a transaction from their treasury Safe. I'll create a proposal that other signers can approve.
+
+```
+→ treasury_propose(treasury_id: "tres_abc...", to: "0x1234...5678", value_wei: "500000000000000000", data: "0x", operation: 0, safe_tx_hash: "0xabc...", nonce: 5)
+Proposal created: prop_xyz... (status: pending, 0/2 signatures collected)
+```
+
+**Agent:** "I've created a treasury proposal to send 0.5 ETH to `0x1234...5678`. It needs 2 signatures before it can execute. Other signers can approve it in the dashboard or via the API."
+
+## Example 13: Sign a treasury proposal
+
+**User:** "Approve the pending proposal for the marketing payment"
+
+```
+→ treasury_list_proposals(treasury_id: "tres_abc...", status: "pending")
+Found 1 proposal(s):
+- prop_xyz... → 0.5 ETH to 0x1234...5678 (1/2 signatures)
+```
+
+```
+→ treasury_sign_proposal(treasury_id: "tres_abc...", proposal_id: "prop_xyz...", signer_address: "0xMyAddress...", signature: "0x...", decision: "approve")
+Signature recorded. 2/2 signatures collected — threshold met, auto-executing...
+Transaction executed: tx_hash 0xdef...
+```
+
+**Agent:** "Done — I approved the proposal and it auto-executed since we hit the 2-of-2 threshold. Transaction hash: `0xdef...`"
+

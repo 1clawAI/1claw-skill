@@ -76,6 +76,8 @@ metadata:
 - Your org uses **LLM token billing** (Stripe AI Gateway): enable in the dashboard; agent JWTs include `llm_token_billing` / `stripe_customer_id` for Shroud routing
 - You need to request access to a Safe multisig treasury (agent access requests)
 - You want to manage or deploy agent EVM addresses and Safe smart accounts (ERC-4337, one per chain; `POST /v1/agents/{id}/smart-accounts` to add a Safe)
+- You want to propose, sign, or execute multisig treasury proposals (Safe transactions requiring threshold signatures)
+- You want to set up agent delegation for treasury signing (owner mode or delegated mode with per-delegation guardrails)
 - You want to generate native multi-chain treasury wallets (Ethereum, Bitcoin, Solana, XRP, Cardano, Tron) — human-only, Pro+ tier
 - You are building a platform integration on 1Claw (register a `plt_` platform app, create bootstrap templates, provision users via OIDC or email)
 - You want to approve or reject pending agent actions from the mobile app (approval queue with risk tiers)
@@ -458,6 +460,37 @@ List all versions of a secret. Returns version numbers, timestamps, and status.
 | --------- | ------ | -------- | ----------- |
 | `path`    | string | yes      | Secret path |
 
+### treasury_propose
+
+Create a multisig proposal for a treasury Safe. The agent must have an active delegation for the treasury.
+
+| Parameter          | Type   | Required | Default | Description                               |
+| ------------------ | ------ | -------- | ------- | ----------------------------------------- |
+| `treasury_id`      | string | yes      |         | Treasury UUID                             |
+| `to`               | string | yes      |         | Destination address (0x-prefixed)         |
+| `value`            | string | yes      |         | Value in ETH (e.g. `"0.01"`)             |
+| `chain`            | string | yes      |         | Chain name or chain ID                    |
+| `data`             | string | no       |         | Hex-encoded calldata                      |
+
+### treasury_sign_proposal
+
+Sign (approve or reject) a pending treasury proposal with an EIP-712 signature.
+
+| Parameter      | Type   | Required | Default    | Description                   |
+| -------------- | ------ | -------- | ---------- | ----------------------------- |
+| `treasury_id`  | string | yes      |            | Treasury UUID                 |
+| `proposal_id`  | string | yes      |            | Proposal UUID                 |
+| `decision`     | string | no       | `approve`  | `approve` or `reject`         |
+
+### treasury_list_proposals
+
+List proposals for a treasury, optionally filtered by status.
+
+| Parameter      | Type   | Required | Description                                     |
+| -------------- | ------ | -------- | ----------------------------------------------- |
+| `treasury_id`  | string | yes      | Treasury UUID                                   |
+| `status`       | string | no       | Filter: `pending`, `approved`, `executed`, etc. |
+
 ### platform_list_apps
 
 List all platform apps registered in the current organization. No parameters.
@@ -656,8 +689,27 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `DELETE` | `/v1/treasury/{treasury_id}/signers/{signer_id}`                     | Remove signer from treasury                      |
 | `POST`   | `/v1/treasury/{treasury_id}/access-requests`                         | Request access (agent-only; requires EVM address) |
 | `GET`    | `/v1/treasury/{treasury_id}/access-requests`                         | List access requests → `{ requests: [...] }`       |
-| `POST`   | `/v1/treasury/{treasury_id}/access-requests/{request_id}/approve`    | Approve access request                           |
+| `POST`   | `/v1/treasury/{treasury_id}/access-requests/{request_id}/approve`    | Approve access request (optional delegation setup) |
 | `POST`   | `/v1/treasury/{treasury_id}/access-requests/{request_id}/deny`       | Deny access request                               |
+
+### Treasury Proposals (multisig propose/sign/execute)
+
+| Method   | Path                                                            | Description                                                                  |
+| -------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `POST`   | `/v1/treasury/{treasury_id}/proposals`                          | Create proposal (agent or user; agent must have delegation)                  |
+| `GET`    | `/v1/treasury/{treasury_id}/proposals`                          | List proposals (filterable by `?status=`)                                    |
+| `GET`    | `/v1/treasury/{treasury_id}/proposals/{proposal_id}`            | Get proposal details + collected signatures                                  |
+| `POST`   | `/v1/treasury/{treasury_id}/proposals/{proposal_id}/sign`       | Sign proposal (approve/reject with EIP-712 sig; auto-executes at threshold)  |
+| `POST`   | `/v1/treasury/{treasury_id}/proposals/{proposal_id}/execute`    | Force-execute if threshold met (user-only)                                   |
+| `DELETE` | `/v1/treasury/{treasury_id}/proposals/{proposal_id}`            | Cancel pending proposal (proposer only)                                      |
+
+### Treasury Delegations
+
+Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`owner` | `delegated` | `both`). Delegations are created when approving access requests with `delegation_mode` and optional per-delegation `guardrails`.
+
+- **Owner mode**: Agent's EOA added as on-chain Safe signer; agent signs UserOps with own key.
+- **Delegated mode**: Agent signs using the treasury wallet key via Intents API; key never leaves `__treasury-keys` vault.
+- **Auto-approve rules**: `treasury_delegations.auto_approve_rules` JSONB — when a proposal matches a rule, the agent's signature is auto-inserted; if threshold is met, auto-execute fires immediately.
 
 ### Treasury Wallets (native multi-chain, human-only, Pro+)
 
@@ -768,6 +820,11 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `treasury`| `requestAccess(treasuryId, { reason })`                                                                      | Request access (agent-only)            |
 | `treasury`| `listAccessRequests(treasuryId)`                                                                             | List access requests                   |
 | `treasury`| `approveAccess(treasuryId, requestId)`, `denyAccess(treasuryId, requestId)`                                   | Approve or deny access request        |
+| `treasury`| `propose(treasuryId, { to, value, chain, data? })`                                                           | Create multisig proposal              |
+| `treasury`| `listProposals(treasuryId, { status? })`                                                                     | List proposals                        |
+| `treasury`| `getProposal(treasuryId, proposalId)`                                                                        | Get proposal + signatures             |
+| `treasury`| `signProposal(treasuryId, proposalId, { decision? })`                                                        | Sign proposal (approve/reject)        |
+| `treasury`| `executeProposal(treasuryId, proposalId)`                                                                    | Force-execute if threshold met        |
 | `treasuryWallets`| `generate({ chains? })`                                                                               | Generate multi-chain wallets (human-only, Pro+) |
 | `treasuryWallets`| `list()`                                                                                              | List active treasury wallets           |
 | `treasuryWallets`| `get(chain)`                                                                                          | Get wallet by chain                    |
