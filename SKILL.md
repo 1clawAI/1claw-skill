@@ -215,7 +215,7 @@ All three key types support optional expiration via `api_key_expires_at`. Expire
 
 ### Shroud & Intents hosts
 
-- **Shroud** (`shroud.1claw.xyz`): TEE LLM proxy + transaction signing; full Intents API surface.
+- **Shroud** (`shroud.1claw.xyz`): TEE LLM proxy + transaction signing; full Intents API surface. Supported providers: OpenAI, Anthropic, Google (Gemini), Mistral, Cohere, OpenRouter, Darkbloom (E2E encrypted Apple Silicon TEE), Venice AI (zero-retention + TEE/E2EE), Stripe AI Gateway.
 - **Intents** (`intents.1claw.xyz`): Additional ingress for signing/health checks; production smoke tests hit `/healthz`.
 
 ---
@@ -828,8 +828,9 @@ Default chain registry (query `GET /v1/chains` for live list):
 | polygon      | 137      | no      |
 | sepolia      | 11155111 | yes     |
 | base-sepolia | 84532    | yes     |
+| arc-testnet  | 5042002  | yes     |
 
-Use chain names (e.g. `"base"`, `"sepolia"`) or numeric chain IDs in transaction requests.
+Use chain names (e.g. `"base"`, `"sepolia"`, `"arc-testnet"`) or numeric chain IDs in transaction requests.
 
 ---
 
