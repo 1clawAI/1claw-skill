@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.8.0
+version: 1.9.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -84,6 +84,8 @@ metadata:
 - You are working with the 1Claw mobile companion app (Expo, React Native, passkey/biometric auth)
 - You want to sign in with a passkey (WebAuthn, passwordless) or manage passkey credentials
 - You want to request a policy change as an agent (approval workflow, human-in-the-loop)
+- You want to register webhooks for wallet, proposal, or transaction events (async notifications)
+- You want to check the balance of a treasury wallet or an agent's signing key address
 
 ---
 
@@ -355,6 +357,7 @@ Submit an EVM transaction for signing and optional broadcast. Requires `intents_
 | `max_fee_per_gas`          | string  | no       |                       | EIP-1559 max fee in wei (triggers Type 2) |
 | `max_priority_fee_per_gas` | string  | no       |                       | EIP-1559 priority fee in wei              |
 | `simulate_first`           | boolean | no       | true                  | Run Tenderly simulation before signing    |
+| `gasless`                  | boolean | no       | false                 | Sponsor gas via Pimlico paymaster (ERC-4337) |
 
 ### sign_transaction
 
@@ -621,7 +624,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 
 | Method   | Path                                               | Description                                                                                       |
 | -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `POST`   | `/v1/agents/{id}/transactions`                     | Submit transaction for signing. Optional `Idempotency-Key` header for replay protection (24h TTL) |
+| `POST`   | `/v1/agents/{id}/transactions`                     | Submit transaction for signing. Set `gasless: true` for Pimlico paymaster gas sponsorship. Optional `Idempotency-Key` header (24h TTL) |
 | `POST`   | `/v1/agents/{id}/transactions/sign`                | Sign transaction without broadcasting (returns `signed_tx`, `tx_hash`, `from`)                    |
 | `POST`   | `/v1/agents/{id}/sign`                             | Unified signing intent: `personal_sign` (EIP-191), `typed_data` (EIP-712), or `transaction` (types 0–4) |
 | `GET`    | `/v1/agents/{id}/transactions`                     | List agent's transactions. `signed_tx` redacted unless `?include_signed_tx=true`                  |
@@ -633,6 +636,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST`   | `/v1/agents/{id}/signing-keys/{chain}/rotate`      | Rotate signing key for a chain — human-only                                                       |
 | `DELETE` | `/v1/agents/{id}/signing-keys/{chain}`             | Deactivate signing key for a chain — human-only                                                   |
 | `POST`   | `/v1/agents/{id}/signing-keys/{chain}/export`      | Export signing key with private key (requires `X-Auth-Confirm` password) — human-only              |
+| `GET`    | `/v1/agents/{id}/signing-keys/{chain}/balance`     | Query native + ERC-20 balances for the signing key address                                          |
 
 ### Shroud Activity
 
@@ -721,6 +725,9 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `POST`   | `/v1/treasury/wallets/{chain}/export`    | Export wallet with private key (requires `X-Auth-Confirm` password header; audit-logged) |
 | `POST`   | `/v1/treasury/wallets/{chain}/rotate`    | Rotate wallet keypair (deactivates old, creates new)       |
 | `DELETE` | `/v1/treasury/wallets/{chain}`           | Deactivate wallet                                          |
+| `GET`    | `/v1/treasury/wallets/{chain}/balance`   | Query native + ERC-20 token balances via chain RPC         |
+| `POST`   | `/v1/treasury/wallets/{chain}/send`      | Signed transfer from treasury wallet (requires `X-Auth-Confirm` re-auth) |
+| `POST`   | `/v1/treasury/wallets/{chain}/swap`      | DEX aggregator token swap via 0x API (requires `X-Auth-Confirm` re-auth) |
 
 ### Platform API (v0.20)
 
@@ -749,6 +756,11 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 
 | Method             | Path                           | Description                                        |
 | ------------------ | ------------------------------ | -------------------------------------------------- |
+| `POST`             | `/v1/webhooks`                 | Register a webhook for wallet/proposal/transaction events |
+| `GET`              | `/v1/webhooks`                 | List webhook registrations                         |
+| `GET`              | `/v1/webhooks/{id}`            | Get webhook details                                |
+| `PATCH`            | `/v1/webhooks/{id}`            | Update webhook (URL, events, active status)        |
+| `DELETE`           | `/v1/webhooks/{id}`            | Delete webhook registration                        |
 | `GET`              | `/v1/health`                   | Health check → `{ status, service, version }`      |
 | `GET`              | `/v1/health/hsm`               | HSM health → `{ status, hsm_provider, connected }` |
 | `POST/GET/DELETE`  | `/v1/auth/api-keys[/{id}]`     | Manage personal API keys                           |
@@ -1198,6 +1210,11 @@ When many agents operate in the same organization:
 - **Account lockout:** 10 failed login attempts → 15-minute lock per user; resets on success.
 - **Session revocation:** Password change or reset invalidates all existing JWTs for the user (`revoked_before` column).
 - **Agent self-update guard:** Agents cannot `PATCH /v1/agents/{id}` on their own record — only human callers can modify agent settings.
+- **Treasury delegation verification:** Intents API `mode: "treasury"` requires an active delegation with `delegated` or `both` mode. Owner-mode delegations must go through the multisig proposal pipeline.
+- **Delegation guardrails enforcement:** Per-delegation guardrails (`to_allowlist`, `max_value_eth`, `allowed_chains`) are enforced during treasury-mode signing. Strictest of delegation + agent guardrails wins.
+- **Webhook SSRF protection:** Webhook dispatcher validates destination URLs and disables redirect following.
+- **Proposal signer authorization:** `sign_proposal` verifies the caller is a treasury signer or proposal creator.
+- **Treasury send/swap lockout:** Failed password re-auth on send/swap triggers account lockout at 10 failures.
 - **x402 unauthenticated amount verification:** The x402 middleware verifies payment amounts even for unauthenticated requests, preventing underpayment on public paid routes.
 - **Request body limit:** 5MB max; larger requests return 413.
 - **Nonce-based CSP:** Dashboard uses per-request cryptographic nonces with `'strict-dynamic'`; replaces previous `'unsafe-inline'` policy.
@@ -1285,8 +1302,14 @@ Audit, org, security, chain, billing, and auth endpoints are **free and never co
 
 ---
 
-## Security Hardening (v0.20.4)
+## Security Hardening (v0.22.1 / v0.20.4)
 
+- **Treasury signing authorization** (v0.22.1, CRITICAL): Intents API treasury mode requires active delegation verification.
+- **Delegation guardrails enforcement** (v0.22.1): Per-delegation spend caps, address allowlists, and chain restrictions now enforced.
+- **Webhook SSRF protection** (v0.22.1): Destination URL validation and redirect blocking in webhook dispatcher.
+- **Proposal signer auth** (v0.22.1): `sign_proposal` requires treasury signer or proposal creator role.
+- **Delegation mode filter** (v0.22.1): Only `delegated`/`both` mode delegations accepted for direct Intents API signing.
+- **Treasury send/swap lockout** (v0.22.1): Password brute-force on send/swap triggers account lockout.
 - **Scope validation** (EXT-C1): Agent scopes must be glob patterns (`secrets/*`), not permission strings (`vault.read`).
 - **Error sanitization** (EXT-L1): `sanitize_errors_middleware` replaces serde error details in 400/422 responses.
 - **Opaque Shroud redaction** (EXT-H1): Labels use SHA-256 hash prefix (`[REDACTED:#a1b2c3d4]`), not vault paths.
