@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.9.0
+version: 1.10.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -84,8 +84,9 @@ metadata:
 - You are working with the 1Claw mobile companion app (Expo, React Native, passkey/biometric auth)
 - You want to sign in with a passkey (WebAuthn, passwordless) or manage passkey credentials
 - You want to request a policy change as an agent (approval workflow, human-in-the-loop)
-- You want to register webhooks for wallet, proposal, or transaction events (async notifications)
+- You want to register webhooks for wallet, proposal, transaction, policy, or signing key events (live async delivery with retries)
 - You want to check the balance of a treasury wallet or an agent's signing key address
+- You want to send a gasless treasury wallet transfer (ERC-4337 UserOperation with Pimlico paymaster sponsorship)
 
 ---
 
@@ -726,7 +727,7 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `POST`   | `/v1/treasury/wallets/{chain}/rotate`    | Rotate wallet keypair (deactivates old, creates new)       |
 | `DELETE` | `/v1/treasury/wallets/{chain}`           | Deactivate wallet                                          |
 | `GET`    | `/v1/treasury/wallets/{chain}/balance`   | Query native + ERC-20 token balances via chain RPC         |
-| `POST`   | `/v1/treasury/wallets/{chain}/send`      | Signed transfer from treasury wallet (requires `X-Auth-Confirm` re-auth) |
+| `POST`   | `/v1/treasury/wallets/{chain}/send`      | Signed transfer from treasury wallet (requires `X-Auth-Confirm` re-auth). Set `gasless: true` for ERC-4337 UserOp with Pimlico paymaster |
 | `POST`   | `/v1/treasury/wallets/{chain}/swap`      | DEX aggregator token swap via 0x API (requires `X-Auth-Confirm` re-auth) |
 
 ### Platform API (v0.20)
@@ -756,7 +757,7 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 
 | Method             | Path                           | Description                                        |
 | ------------------ | ------------------------------ | -------------------------------------------------- |
-| `POST`             | `/v1/webhooks`                 | Register a webhook for wallet/proposal/transaction events |
+| `POST`             | `/v1/webhooks`                 | Register a webhook for wallet/proposal/transaction/policy/signing_key events (live delivery with retries) |
 | `GET`              | `/v1/webhooks`                 | List webhook registrations                         |
 | `GET`              | `/v1/webhooks/{id}`            | Get webhook details                                |
 | `PATCH`            | `/v1/webhooks/{id}`            | Update webhook (URL, events, active status)        |
@@ -843,6 +844,12 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `treasuryWallets`| `export(chain, { password })`                                                                         | Export wallet with private key (requires password re-auth via `X-Auth-Confirm`) |
 | `treasuryWallets`| `rotate(chain)`                                                                                       | Rotate wallet keypair                  |
 | `treasuryWallets`| `deactivate(chain)`                                                                                   | Deactivate wallet                      |
+| `depositDestinations` | `create({ chain, label?, treasury_wallet_id? })`                                                 | Create inbound deposit address         |
+| `depositDestinations` | `list(chain?, status?)`                                                                          | List deposit destinations              |
+| `internalAccounts` | `create({ name })`                                                                                  | Create internal ledger account         |
+| `internalAccounts` | `transfer({ from_account_id, to_account_id, asset, amount })`                                       | Off-chain transfer between accounts    |
+| `fiat`           | `createOnrampSession({ chain, amount_usd? })`                                                         | Fiat-to-crypto widget URL              |
+| `fiat`           | `initiateOfframp({ chain, asset, amount })`                                                           | Crypto-to-fiat widget URL              |
 | `platform`| `createApp({ name, slug, billing_model?, auth_mode?, ... })`                                                  | Register platform app (returns plt_ key) |
 | `platform`| `listApps()`                                                                                                 | List platform apps                     |
 | `platform`| `getApp(appId)`                                                                                              | Get platform app                       |
