@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.11.0
+version: 1.12.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -434,6 +434,19 @@ Sign a message using EIP-191 personal_sign. Agent must have `message_signing_ena
 | `message`          | string | yes      |                       | Hex-encoded message (0x-prefixed or raw) |
 | `chain`            | string | no       | `ethereum`            | Chain name                               |
 | `signing_key_path` | string | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
+
+### lease_bankr_key
+
+Provision a short-lived Bankr wallet API key (`bk_usr_`) from the org's partner key. Requires `BANKR_PARTNER_KEY` configured on Vault.
+
+| Parameter              | Type    | Required | Default | Description                                      |
+| ---------------------- | ------- | -------- | ------- | ------------------------------------------------ |
+| `agent_id`             | string  | no       |         | Agent ID (uses authenticated agent if omitted)   |
+| `wallet_id`            | string  | no       | org default | Bankr wallet ID (`wlt_...`)                  |
+| `ttl_seconds`          | number  | no       | 3600    | Lease TTL (max 86400)                          |
+| `llm_gateway_enabled`  | boolean | no       | true    | Enable LLM gateway access                      |
+| `agent_api_enabled`    | boolean | no       | false   | Enable agent API access                          |
+| `read_only`            | boolean | no       | true    | Read-only key                                    |
 
 ### sign_typed_data
 
