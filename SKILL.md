@@ -641,7 +641,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `DELETE` | `/v1/agents/{id}`                      | Delete agent → `204`                                                       |
 | `POST`   | `/v1/agents/{id}/rotate-key`           | Rotate agent API key → `{ api_key: "ocv_..." }`                            |
 | `POST`   | `/v1/agents/{id}/rotate-identity-keys` | Rotate agent SSH + ECDH keypairs (user-only; keys in `__agent-keys` vault) |
-| `POST`   | `/v1/agents/{id}/bankr-keys/lease`     | Lease short-lived Bankr `bk_usr_` key (requires `BANKR_PARTNER_KEY` on Vault) |
+| `POST`   | `/v1/agents/{id}/bankr-keys/lease`     | Lease Bankr key (privileged; policy on `agents/{id}/bankr/*`; agent response omits `api_key`) |
 | `GET`    | `/v1/agents/{id}/bankr-keys`           | List active Bankr key leases for agent                                      |
 | `DELETE` | `/v1/agents/{id}/bankr-keys/{lease_id}` | Revoke lease (calls Bankr API)                                           |
 
