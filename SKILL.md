@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.12.0
+version: 1.13.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -87,6 +87,7 @@ metadata:
 - You want to register webhooks for wallet, proposal, transaction, policy, or signing key events (live async delivery with retries)
 - You want to check the balance of a treasury wallet or an agent's signing key address
 - You want to send a gasless treasury wallet transfer (ERC-4337 UserOperation with Pimlico paymaster sponsorship)
+- You need a short-lived Bankr wallet API key for LLM Gateway or agent API access (dynamic key vending via `lease_bankr_key` — preferred over static `put_secret` for Bankr)
 
 ---
 
@@ -220,8 +221,33 @@ All three key types support optional expiration via `api_key_expires_at`. Expire
 
 ### Shroud & Intents hosts
 
-- **Shroud** (`shroud.1claw.xyz`): TEE LLM proxy + transaction signing; full Intents API surface. Supported providers: OpenAI, Anthropic, Google (Gemini), Mistral, Cohere, OpenRouter, Darkbloom (E2E encrypted Apple Silicon TEE), Venice AI (zero-retention + TEE/E2EE), Stripe AI Gateway.
+- **Shroud** (`shroud.1claw.xyz`): TEE LLM proxy + transaction signing; full Intents API surface. Supported providers: OpenAI, Anthropic, Google (Gemini), Mistral, Cohere, OpenRouter, Darkbloom (E2E encrypted Apple Silicon TEE), Venice AI (zero-retention + TEE/E2EE), Bankr LLM Gateway (`X-Shroud-Provider: bankr`), Stripe AI Gateway.
 - **Intents** (`intents.1claw.xyz`): Additional ingress for signing/health checks; production smoke tests hit `/healthz`.
+
+---
+
+## Bankr Dynamic Key Vending
+
+Partner-key secret engine for short-lived Bankr wallet API keys. Store the long-lived partner key (`bk_ptr_`) server-side via `BANKR_PARTNER_KEY`; Vault issues scoped, TTL-bound `bk_usr_` keys per agent through the Bankr Partner API.
+
+**Prefer vending over static `put_secret`** for Bankr: leased keys auto-revoke on agent delete/deactivation/TTL; partner key never enters the agent vault; Shroud can resolve leases without `get_secret`.
+
+| Property | Value |
+| -------- | ----- |
+| Default TTL | 1 hour |
+| Max TTL | 24 hours |
+| Max concurrent leases | 5 per agent |
+| Default permissions | LLM Gateway enabled, read-only, agent API disabled |
+
+**MCP:** `lease_bankr_key` — returns `{ lease_id, api_key, wallet_id, expires_at }`.
+
+**CLI:** `1claw agent bankr-key lease|list|revoke <agent-id>`
+
+**SDK:** `client.agents.leaseBankrKey()`, `.listBankrKeys()`, `.revokeBankrKey()`
+
+**Shroud fallback order** (`X-Shroud-Provider: bankr`): (1) active lease, (2) `providers/bankr/api-key`, (3) `X-Shroud-Api-Key` header.
+
+**Docs:** https://docs.1claw.xyz/docs/guides/bankr-key-vending
 
 ---
 
@@ -612,6 +638,9 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `DELETE` | `/v1/agents/{id}`                      | Delete agent → `204`                                                       |
 | `POST`   | `/v1/agents/{id}/rotate-key`           | Rotate agent API key → `{ api_key: "ocv_..." }`                            |
 | `POST`   | `/v1/agents/{id}/rotate-identity-keys` | Rotate agent SSH + ECDH keypairs (user-only; keys in `__agent-keys` vault) |
+| `POST`   | `/v1/agents/{id}/bankr-keys/lease`     | Lease short-lived Bankr `bk_usr_` key (requires `BANKR_PARTNER_KEY` on Vault) |
+| `GET`    | `/v1/agents/{id}/bankr-keys`           | List active Bankr key leases for agent                                      |
+| `DELETE` | `/v1/agents/{id}/bankr-keys/{lease_id}` | Revoke lease (calls Bankr API)                                           |
 
 ### Policies (Access Control)
 
