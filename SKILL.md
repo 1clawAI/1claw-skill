@@ -234,12 +234,15 @@ Partner-key secret engine for short-lived Bankr wallet API keys. Store the long-
 
 | Property | Value |
 | -------- | ----- |
-| Default TTL | 1 hour |
+| Access | **Deny-by-default** — explicit policy on `agents/{id}/bankr/*` in `__agent-keys` |
+| Agent default TTL | 15 min (when `ttl_seconds` omitted) |
+| Recommended TTL (agents) | 5–15 min; revoke after task |
 | Max TTL | 24 hours |
 | Max concurrent leases | 5 per agent |
 | Default permissions | LLM Gateway enabled, read-only, agent API disabled |
+| Secret output | Agent/MCP responses **omit** `api_key`; Shroud resolves leased keys |
 
-**MCP:** `lease_bankr_key` — returns `{ lease_id, api_key, wallet_id, expires_at }`.
+**MCP:** `lease_bankr_key` — privileged; returns lease metadata only (no `bk_usr_` in tool output).
 
 **CLI:** `1claw agent bankr-key lease|list|revoke <agent-id>`
 
@@ -463,13 +466,13 @@ Sign a message using EIP-191 personal_sign. Agent must have `message_signing_ena
 
 ### lease_bankr_key
 
-Provision a short-lived Bankr wallet API key (`bk_usr_`) from the org's partner key. Requires `BANKR_PARTNER_KEY` configured on Vault.
+**Privileged** — deny-by-default. Requires explicit policy on `agents/{id}/bankr/*` plus `BANKR_PARTNER_KEY` on Vault. Does **not** return the `bk_usr_` key in tool output; use Shroud for LLM traffic.
 
 | Parameter              | Type    | Required | Default | Description                                      |
 | ---------------------- | ------- | -------- | ------- | ------------------------------------------------ |
 | `agent_id`             | string  | no       |         | Agent ID (uses authenticated agent if omitted)   |
 | `wallet_id`            | string  | no       | org default | Bankr wallet ID (`wlt_...`)                  |
-| `ttl_seconds`          | number  | no       | 3600    | Lease TTL (max 86400)                          |
+| `ttl_seconds`          | number  | no       | 900     | Lease TTL — recommend 300–900; max 86400         |
 | `llm_gateway_enabled`  | boolean | no       | true    | Enable LLM gateway access                      |
 | `agent_api_enabled`    | boolean | no       | false   | Enable agent API access                          |
 | `read_only`            | boolean | no       | true    | Read-only key                                    |
