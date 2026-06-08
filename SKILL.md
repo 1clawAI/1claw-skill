@@ -88,6 +88,9 @@ metadata:
 - You want to check the balance of a treasury wallet or an agent's signing key address
 - You want to send a gasless treasury wallet transfer (ERC-4337 UserOperation with Pimlico paymaster sponsorship)
 - You need a short-lived Bankr wallet API key for LLM Gateway or agent API access (dynamic key vending via `lease_bankr_key` — preferred over static `put_secret` for Bankr)
+- You want to implement passwordless login for an embedded wallet (Email OTP via `POST /v1/auth/email-otp/send` + `verify`)
+- You want to add "Sign in with 1Claw" OAuth2 flow to a third-party app (OAuth2 authorization server: `/v1/oauth/authorize`, `/v1/oauth/token`, `/v1/oauth/userinfo`)
+- You want to set spend policies on embedded wallets (per-app or per-user limits, allowlists, daily caps via Platform API spend policy endpoints)
 
 ---
 
@@ -582,6 +585,9 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST` | `/v1/auth/mfa/verify`   | Verify MFA code during login                          |
 | `POST` | `/v1/auth/passkeys/assert/begin` | Start passkey login (accepts `{ email }`)    |
 | `POST` | `/v1/auth/passkeys/assert/complete` | Complete passkey login → JWT              |
+| `POST` | `/v1/auth/email-otp/send`  | Send 6-digit OTP code to email (5-min TTL)          |
+| `POST` | `/v1/auth/email-otp/verify`| Verify OTP → JWT + user_id + wallet_address          |
+| `POST` | `/v1/oauth/token`          | Exchange auth code for access_token + id_token       |
 | `GET`  | `/.well-known/openid-configuration` | OIDC discovery (issuer, jwks_uri, supported algs) |
 | `GET`  | `/.well-known/jwks.json` | Public JWKS (EdDSA + RS256 key versions, keyed by `kid`) |
 
@@ -602,6 +608,12 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET`    | `/v1/auth/passkeys`        | List registered passkeys                                         |
 | `DELETE` | `/v1/auth/passkeys/{id}`   | Delete a passkey                                                 |
 | `POST`   | `/v1/auth/export-data`     | GDPR data export (returns JSON archive of user's personal data)  |
+| `POST`   | `/v1/auth/email-otp/send`  | Send 6-digit OTP code to email (public, 5-min TTL)               |
+| `POST`   | `/v1/auth/email-otp/verify`| Verify OTP code → JWT + user_id + wallet_address (public)        |
+| `GET`    | `/v1/oauth/authorize`      | Get OAuth consent info (app_name, scopes, already_consented)     |
+| `POST`   | `/v1/oauth/authorize`      | Approve/deny OAuth authorization (issues authorization code)     |
+| `POST`   | `/v1/oauth/token`          | Exchange authorization code for access_token + id_token (public) |
+| `GET`    | `/v1/oauth/userinfo`       | Get user info (sub, email, name, wallet_address)                 |
 
 ### Vaults
 
@@ -774,6 +786,7 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `GET`    | `/v1/treasury/wallets/{chain}/balance`   | Query native + ERC-20 token balances via chain RPC         |
 | `POST`   | `/v1/treasury/wallets/{chain}/send`      | Signed transfer from treasury wallet (requires `X-Auth-Confirm` re-auth). Set `gasless: true` for ERC-4337 UserOp with Pimlico paymaster |
 | `POST`   | `/v1/treasury/wallets/{chain}/swap`      | DEX aggregator token swap via 0x API (requires `X-Auth-Confirm` re-auth) |
+| `GET`    | `/v1/treasury/wallets/spend-policy`      | View effective spend policy (user-only)                    |
 
 ### Platform API (v0.20)
 
@@ -797,6 +810,10 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `POST`   | `/v1/platform/connections/{id}/reissue-claim`    | Reissue expired claim URL without re-provisioning      |
 | `GET`    | `/v1/platform/connected-apps`                    | List apps connected to calling user (user-only)        |
 | `DELETE` | `/v1/platform/connected-apps/{connection_id}`    | Disconnect from a platform app                         |
+| `POST`   | `/v1/platform/apps/{id}/spend-policies`          | Create app-level wallet spend policy (platform-only)   |
+| `GET`    | `/v1/platform/apps/{id}/spend-policies`          | List active spend policies for the app                 |
+| `PUT`    | `/v1/platform/connections/{id}/spend-policy`     | Set per-user spend policy override                     |
+| `DELETE` | `/v1/platform/apps/{id}/spend-policies/{pid}`    | Deactivate a spend policy                              |
 
 ### Other
 
@@ -866,6 +883,10 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `auth`    | `login({ email, password })`                                                                                 | Human login                            |
 | `auth`    | `agentToken({ agent_id, api_key })`                                                                          | Agent JWT exchange                     |
 | `auth`    | `logout()`                                                                                                   | Revoke token                           |
+| `auth`    | `sendEmailOtp({ email, platform_app_id? })`                                                                  | Send 6-digit OTP code to email         |
+| `auth`    | `verifyEmailOtp({ email, code, platform_app_id?, auto_provision_chains? })`                                   | Verify OTP → JWT + wallet_address      |
+| `auth`    | `socialLogin({ provider, id_token, ... })`                                                                    | Social login (Google/Apple/Discord)    |
+| `auth`    | `exchangeOAuthCode({ code, redirect_uri, code_verifier? })`                                                  | Exchange OAuth authorization code      |
 | `apiKeys` | `create({ name, scopes?, expires_at? })`                                                                     | Create personal API key                |
 | `apiKeys` | `list()`                                                                                                     | List API keys                          |
 | `apiKeys` | `revoke(keyId)`                                                                                              | Revoke key                             |
@@ -889,6 +910,7 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `treasuryWallets`| `export(chain, { password })`                                                                         | Export wallet with private key (requires password re-auth via `X-Auth-Confirm`) |
 | `treasuryWallets`| `rotate(chain)`                                                                                       | Rotate wallet keypair                  |
 | `treasuryWallets`| `deactivate(chain)`                                                                                   | Deactivate wallet                      |
+| `treasuryWallets`| `getEffectiveSpendPolicy()`                                                                           | View effective spend policy            |
 | `depositDestinations` | `create({ chain, label?, treasury_wallet_id? })`                                                 | Create inbound deposit address         |
 | `depositDestinations` | `list(chain?, status?)`                                                                          | List deposit destinations              |
 | `internalAccounts` | `create({ name })`                                                                                  | Create internal ledger account         |
@@ -907,6 +929,10 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `platform`| `claimPreview(token)`                                                                                        | Preview claim token (public)           |
 | `platform`| `claimRedeem(token)`                                                                                         | Redeem claim token (public)            |
 | `platform`| `listConnectedApps()`                                                                                        | List connected apps (user-only)        |
+| `platform`| `createSpendPolicy(appId, { ... })`                                                                          | Create app-level wallet spend policy   |
+| `platform`| `listSpendPolicies(appId)`                                                                                   | List active spend policies             |
+| `platform`| `setUserSpendPolicy(connectionId, { ... })`                                                                  | Set per-user spend policy override     |
+| `platform`| `deleteSpendPolicy(appId, policyId)`                                                                         | Deactivate a spend policy              |
 | `org`     | `listMembers()`                                                                                              | List org members                       |
 | `org`     | `updateMemberRole(userId, role)`                                                                             | Update member role                     |
 | `org`     | `removeMember(userId)`                                                                                       | Remove member                          |
