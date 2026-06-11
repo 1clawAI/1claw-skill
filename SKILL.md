@@ -91,6 +91,10 @@ metadata:
 - You want to implement passwordless login for an embedded wallet (Email OTP via `POST /v1/auth/email-otp/send` + `verify`)
 - You want to add "Sign in with 1Claw" OAuth2 flow to a third-party app (OAuth2 authorization server: `/v1/oauth/authorize`, `/v1/oauth/token`, `/v1/oauth/userinfo`)
 - You want to set spend policies on embedded wallets (per-app or per-user limits, allowlists, daily caps via Platform API spend policy endpoints)
+- You want to monitor risk events for your org (geo-velocity, ASN drift, honeytoken triggers via `GET /v1/risk/events`)
+- You want to deploy honeytoken canary secrets to detect unauthorized access (`POST /v1/risk/honeytokens`)
+- You want to check the risk verdict for a principal (`GET /v1/risk/verdicts/{type}/{id}`)
+- You want to enable DPoP token binding for proof-of-possession security (`dpop: true` in SDK config, `ONECLAW_DPOP=true` in MCP/CLI)
 
 ---
 
