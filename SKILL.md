@@ -1400,6 +1400,14 @@ Audit, org, security, chain, billing, and auth endpoints are **free and never co
 - **Redaction entropy floor** (EXT-H4): Secrets < 8 chars or entropy < 3.0 excluded from Shroud automata.
 - **Bootstrap signing keys** (v0.20.3): Template `spec.signing_keys` auto-provisions per-chain keys.
 
+### Local Vault & Daemon (v0.34.2)
+
+- **`1claw local`**: Encrypted local vault (AES-256-GCM, PBKDF2). Subcommands: `init`, `add`, `get`, `rm`, `list`, `import`, `export`, `sync`, `status`, `destroy`. File: `~/.config/1claw/local-vault.enc`.
+- **`1claw daemon`**: Unix socket daemon (`daemon.sock`) serving secrets over HTTP. `POST /proxy` injects secrets into HTTP requests per policy rules — the AI model never sees raw values.
+- **`1claw daemon policy`**: Per-secret host allowlist. `add <secret> --hosts <hosts>` / `list` / `remove`. Fail-closed: no policy = no injection.
+- **`1claw setup --local`**: Configures AI clients for local daemon mode (`ONECLAW_LOCAL_VAULT=true`).
+- **MCP local mode**: `proxy_request` tool sends HTTP requests with secret injection; `list_secrets` shows names only.
+
 ---
 
 ## Links
