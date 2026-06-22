@@ -157,13 +157,12 @@ Optional overrides: `ONECLAW_AGENT_ID` (explicit agent), `ONECLAW_VAULT_ID` (exp
 
 **stdio refresh:** The MCP server rebuilds its Vault API client from **current** environment variables on **each tool call** (no long-lived cached client tied to startup env), so updating `ONECLAW_VAULT_ID` or keys in the client config takes effect without restarting the process.
 
-**Hosted HTTP streaming (advanced only):** Use only when the client cannot run the stdio server above. Obtain a JWT via `POST /v1/auth/agent-token` — it expires in about one hour with **no automatic refresh**. For Cursor, Claude Code, Codex, and Claude Desktop, always use stdio + `ONECLAW_AGENT_API_KEY` so `@1claw/mcp` exchanges the key and refreshes tokens.
+**Hosted HTTP streaming (advanced only):** Use only when the client cannot run the stdio server above. Pass your `ocv_` API key as a Bearer token — the server exchanges it for a JWT and auto-discovers the vault. For Cursor, Claude Code, Codex, and Claude Desktop, always use stdio + `ONECLAW_AGENT_API_KEY` so `@1claw/mcp` handles token refresh automatically.
 
 ```
 URL: https://mcp.1claw.xyz/mcp
 Headers:
-  Authorization: Bearer <agent-jwt>
-  X-Vault-ID: <vault-uuid>
+  Authorization: Bearer ocv_your_agent_api_key
 ```
 
 ### Option 2: TypeScript SDK
