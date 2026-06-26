@@ -494,6 +494,17 @@ Sign EIP-712 typed structured data. Agent must pass EIP-712 guardrail enforcemen
 | `chain`            | string | no       | `ethereum`            | Chain name                                     |
 | `signing_key_path` | string | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
 
+### sign_digest
+
+Sign a client-computed 32-byte digest **directly** (raw/blind signing) → 65-byte `r‖s‖v` signature. For ERC-1271/ERC-7739 nested EIP-712 flows (e.g. Polymarket CLOB orders) where the canonical hash is computed client-side. Requires the agent's `raw_signing_enabled` flag (human-set; off by default); bypasses guardrails; audit-logged.
+
+| Parameter          | Type   | Required | Default               | Description                                    |
+| ------------------ | ------ | -------- | --------------------- | ---------------------------------------------- |
+| `agent_id`         | string | no       |                       | Agent ID (uses authenticated agent if omitted) |
+| `hash`             | string | yes      |                       | 0x-prefixed 32-byte (64 hex char) digest        |
+| `chain`            | string | no       | `ethereum`            | Chain name                                     |
+| `signing_key_path` | string | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
+
 ### rotate_generate
 
 Generate a new random value and rotate a secret to it. Combines generation and rotation in one step.
@@ -687,7 +698,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `POST`   | `/v1/agents/{id}/transactions`                     | Submit transaction for signing. Set `gasless: true` for Pimlico paymaster gas sponsorship. Optional `Idempotency-Key` header (24h TTL) |
 | `POST`   | `/v1/agents/{id}/transactions/sign`                | Sign transaction without broadcasting (returns `signed_tx`, `tx_hash`, `from`)                    |
-| `POST`   | `/v1/agents/{id}/sign`                             | Unified signing intent: `personal_sign` (EIP-191), `typed_data` (EIP-712), or `transaction` (types 0–4) |
+| `POST`   | `/v1/agents/{id}/sign`                             | Unified signing intent: `personal_sign` (EIP-191), `typed_data` (EIP-712), `eip712_digest` (raw digest; requires `raw_signing_enabled`), or `transaction` (types 0–4) |
 | `GET`    | `/v1/agents/{id}/transactions`                     | List agent's transactions. `signed_tx` redacted unless `?include_signed_tx=true`                  |
 | `GET`    | `/v1/agents/{id}/transactions/{txid}`              | Get transaction details. `signed_tx` redacted unless `?include_signed_tx=true`                    |
 | `POST`   | `/v1/agents/{id}/transactions/simulate`            | Simulate single transaction                                                                       |
@@ -1034,9 +1045,10 @@ Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), 
 Unified `POST /v1/agents/{id}/sign` with `intent_type`:
 - `personal_sign` — EIP-191 message signing (requires `message_signing_enabled`)
 - `typed_data` — EIP-712 typed data signing (deny-by-default; dangerous types like Permit always require `eip712_domain_allowlist`)
+- `eip712_digest` (alias `digest`) — raw/blind signing of a client-computed 32-byte `hash` → 65-byte `r‖s‖v` signature; for ERC-1271/ERC-7739 nested EIP-712 flows (e.g. Polymarket). Requires human-set `raw_signing_enabled` (off by default); bypasses guardrails; audit-logged.
 - `transaction` — EIP-2718 types 0–4 (legacy, EIP-2930, EIP-1559, EIP-4844, EIP-7702)
 
-Use `sign_message` and `sign_typed_data` MCP tools, or `client.agents.signIntent()`.
+Use `sign_message`, `sign_typed_data`, and `sign_digest` MCP tools, or `client.agents.signIntent()`.
 
 #### Replay protection (Idempotency-Key)
 
