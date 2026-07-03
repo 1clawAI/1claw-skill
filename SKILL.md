@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.13.0
+version: 1.14.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -824,6 +824,9 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `POST`   | `/v1/platform/connections/{id}/reissue-claim`    | Reissue expired claim URL without re-provisioning      |
 | `GET`    | `/v1/platform/connected-apps`                    | List apps connected to calling user (user-only)        |
 | `DELETE` | `/v1/platform/connected-apps/{connection_id}`    | Disconnect from a platform app                         |
+| `POST`   | `/v1/platform/connections/{id}/grant`            | Grant platform app access to vaults/agents (user-only) |
+| `GET`    | `/v1/platform/connections/{id}/grants`           | List active resource grants for a connection           |
+| `DELETE` | `/v1/platform/connections/{id}/grants/{grant_id}`| Revoke a specific resource grant                       |
 | `POST`   | `/v1/platform/apps/{id}/spend-policies`          | Create app-level wallet spend policy (platform-only)   |
 | `GET`    | `/v1/platform/apps/{id}/spend-policies`          | List active spend policies for the app                 |
 | `PUT`    | `/v1/platform/connections/{id}/spend-policy`     | Set per-user spend policy override                     |
