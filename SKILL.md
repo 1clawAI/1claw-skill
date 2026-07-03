@@ -378,26 +378,35 @@ Simulate an EVM transaction via Tenderly without signing. Returns balance change
 
 ### submit_transaction
 
-Submit an EVM transaction for signing and optional broadcast. Requires `intents_api_enabled`.
+Submit a transaction for signing and optional broadcast. Requires `intents_api_enabled`. Works for **EVM and non-EVM** chains (Bitcoin, Solana, XRP, Cardano, Tron) — the server dispatches by chain family and auto-fetches the chain data it needs.
 
 | Parameter                  | Type    | Required | Default               | Description                               |
 | -------------------------- | ------- | -------- | --------------------- | ----------------------------------------- |
-| `to`                       | string  | yes      |                       | Destination address                       |
-| `value`                    | string  | yes      |                       | Value in ETH                              |
+| `to`                       | string  | yes      |                       | Destination address (chain-native format) |
+| `value`                    | string  | yes      |                       | Value in the chain's major unit as a decimal string (ETH / BTC / SOL / XRP / ADA / TRX) |
 | `chain`                    | string  | yes      |                       | Chain name or chain ID                    |
-| `data`                     | string  | no       |                       | Hex-encoded calldata                      |
+| `data`                     | string  | no       |                       | Hex-encoded calldata (EVM)                |
 | `signing_key_path`         | string  | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
-| `nonce`                    | number  | no       | auto-resolved         | Transaction nonce                         |
-| `gas_price`                | string  | no       |                       | Gas price in wei (legacy mode)            |
-| `gas_limit`                | number  | no       | 21000                 | Gas limit                                 |
+| `nonce`                    | number  | no       | auto-resolved         | Transaction nonce (EVM)                   |
+| `gas_price`                | string  | no       |                       | Gas price in wei (EVM legacy mode)        |
+| `gas_limit`                | number  | no       | 21000                 | Gas limit (EVM)                           |
 | `max_fee_per_gas`          | string  | no       |                       | EIP-1559 max fee in wei (triggers Type 2) |
 | `max_priority_fee_per_gas` | string  | no       |                       | EIP-1559 priority fee in wei              |
-| `simulate_first`           | boolean | no       | true                  | Run Tenderly simulation before signing    |
+| `simulate_first`           | boolean | no       | true                  | Run Tenderly simulation before signing (EVM-only; no-op on non-EVM) |
 | `gasless`                  | boolean | no       | false                 | Sponsor gas via Pimlico paymaster (ERC-4337) |
+| `destination_tag`          | number  | no       |                       | **XRP** destination tag                   |
+| `memo`                     | string  | no       |                       | **XRP / Solana** memo                     |
+| `fee_rate_sat_per_vbyte`   | number  | no       | fetched               | **Bitcoin** fee rate override             |
+| `fee_limit_sun`            | number  | no       |                       | **Tron** TRC-20 energy fee limit          |
+| `token_mint`               | string  | no       |                       | **Solana (SPL) / Tron (TRC-20)** token mint/contract; omit for native transfer |
+| `token_decimals`           | number  | no       | 6                     | **Solana / Tron** token decimals          |
+| `ttl`                      | number  | no       |                       | **Cardano** time-to-live (absolute slot)  |
+
+Non-EVM responses use `raw_tx` for the signed payload and a chain-native `tx_hash` (reversed-hex txid for Bitcoin, base58 signature for Solana, uppercase hex for XRP, blake2b-256 hex for Cardano, SHA-256 txID hex for Tron).
 
 ### sign_transaction
 
-Sign an EVM transaction without broadcasting. Returns `signed_tx` hex + `tx_hash` + `from` address. Same guardrails as `submit_transaction`.
+Sign a transaction without broadcasting (EVM or non-EVM). Returns `signed_tx`/`raw_tx` + `tx_hash` + `from` address. Same guardrails and chain-specific fields as `submit_transaction`.
 
 | Parameter                  | Type    | Required | Default               | Description                               |
 | -------------------------- | ------- | -------- | --------------------- | ----------------------------------------- |
@@ -870,7 +879,7 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `agents`  | `update(agentId, { is_active?, scopes?, intents_api_enabled?, tx_*? })`                                      | Update agent                           |
 | `agents`  | `delete(agentId)`                                                                                            | Delete agent                           |
 | `agents`  | `rotateKey(agentId)`                                                                                         | Rotate agent API key                   |
-| `agents`  | `submitTransaction(agentId, { to, value, chain, ... })`                                                      | Submit EVM transaction                 |
+| `agents`  | `submitTransaction(agentId, { to, value, chain, ... })`                                                      | Submit transaction (EVM + non-EVM)     |
 | `agents`  | `simulateTransaction(agentId, { to, value, chain, ... })`                                                    | Simulate transaction                   |
 | `agents`  | `simulateBundle(agentId, bundle)`                                                                            | Simulate transaction bundle            |
 | `agents`  | `getTransaction(agentId, txId)`                                                                              | Get transaction                        |
@@ -1041,7 +1050,7 @@ Default signing key path auto-resolves: if the agent has a per-chain signing key
 
 #### Multi-chain signing keys (v0.18)
 
-Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), Bitcoin (secp256k1), Solana (Ed25519), XRP (Ed25519), Cardano (Ed25519), Tron (secp256k1). Private keys stored in `__agent-keys` vault at `agents/{id}/chains/{chain}/private_key`. Provisioned by humans only. Use `provision_signing_key` MCP tool or `client.signingKeys.create()`. **Export**: `POST /v1/agents/{id}/signing-keys/{chain}/export` — human-only, requires `X-Auth-Confirm` password header; returns `{ private_key, public_key, address, curve, chain }`; audit-logged; failed re-auth triggers account lockout.
+Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), Bitcoin (secp256k1), Solana (Ed25519), XRP (Ed25519), Cardano (Ed25519), Tron (secp256k1). All six chains support **on-chain transaction signing + broadcast** through the Intents API (`submit_transaction` / `sign_transaction`) — 1claw dispatches by chain family, auto-fetches chain data (Bitcoin UTXOs/fee, Solana blockhash, XRP sequence, Cardano protocol params, Tron ref block), signs in the HSM/TEE, and broadcasts. `value` is the major-unit decimal string. Private keys stored in `__agent-keys` vault at `agents/{id}/chains/{chain}/private_key`. Provisioned by humans only. Use `provision_signing_key` MCP tool or `client.signingKeys.create()`. **Export**: `POST /v1/agents/{id}/signing-keys/{chain}/export` — human-only, requires `X-Auth-Confirm` password header; returns `{ private_key, public_key, address, curve, chain }`; audit-logged; failed re-auth triggers account lockout.
 
 #### Extended signing intents (v0.18)
 
