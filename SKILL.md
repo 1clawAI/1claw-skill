@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.14.0
+version: 1.15.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -71,6 +71,7 @@ metadata:
 - You need to sign or simulate an EVM transaction without exposing private keys
 - You need to sign an EIP-191 personal message or EIP-712 typed data
 - You want to provision multi-chain signing keys (Ethereum, Bitcoin, Solana, XRP, Cardano, Tron)
+- You want to sign arbitrary XRPL transaction types (TrustSet, OfferCreate, NFTokenMint, AMMCreate, EscrowCreate, etc.) via `xrpl_tx_json`
 - You want TEE-grade key isolation for transaction signing (use Shroud at `shroud.1claw.xyz`)
 - Your vault uses **MPC secret storage** — DEKs split across GCP/AWS/Azure HSMs (Shamir 2-of-3) or XOR 2-of-2 client custody; provide `X-Client-Share` header when reading from client-custody vaults
 - Your org uses **LLM token billing** (Stripe AI Gateway): enable in the dashboard; agent JWTs include `llm_token_billing` / `stripe_customer_id` for Shroud routing
@@ -401,6 +402,7 @@ Submit a transaction for signing and optional broadcast. Requires `intents_api_e
 | `token_mint`               | string  | no       |                       | **Solana (SPL) / Tron (TRC-20)** token mint/contract; omit for native transfer |
 | `token_decimals`           | number  | no       | 6                     | **Solana / Tron** token decimals          |
 | `ttl`                      | number  | no       |                       | **Cardano** time-to-live (absolute slot)  |
+| `xrpl_tx_json`             | object  | no       |                       | **XRP** raw XRPL transaction JSON for full tx type coverage (TrustSet, OfferCreate, NFTokenMint, AMMCreate, EscrowCreate, etc.). Account/Sequence/Fee/SigningPubKey are auto-filled. |
 
 Non-EVM responses use `raw_tx` for the signed payload and a chain-native `tx_hash` (reversed-hex txid for Bitcoin, base58 signature for Solana, uppercase hex for XRP, blake2b-256 hex for Cardano, SHA-256 txID hex for Tron).
 
@@ -420,6 +422,7 @@ Sign a transaction without broadcasting (EVM or non-EVM). Returns `signed_tx`/`r
 | `gas_limit`                | number  | no       | 21000                 | Gas limit                                 |
 | `max_fee_per_gas`          | string  | no       |                       | EIP-1559 max fee in wei (triggers Type 2) |
 | `max_priority_fee_per_gas` | string  | no       |                       | EIP-1559 priority fee in wei              |
+| `xrpl_tx_json`             | object  | no       |                       | **XRP** raw XRPL transaction JSON (same as submit_transaction) |
 
 ### list_transactions
 
@@ -1050,7 +1053,7 @@ Default signing key path auto-resolves: if the agent has a per-chain signing key
 
 #### Multi-chain signing keys (v0.18)
 
-Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), Bitcoin (secp256k1), Solana (Ed25519), XRP (Ed25519), Cardano (Ed25519), Tron (secp256k1). All six chains support **on-chain transaction signing + broadcast** through the Intents API (`submit_transaction` / `sign_transaction`) — 1claw dispatches by chain family, auto-fetches chain data (Bitcoin UTXOs/fee, Solana blockhash, XRP sequence, Cardano protocol params, Tron ref block), signs in the HSM/TEE, and broadcasts. `value` is the major-unit decimal string. Private keys stored in `__agent-keys` vault at `agents/{id}/chains/{chain}/private_key`. Provisioned by humans only. Use `provision_signing_key` MCP tool or `client.signingKeys.create()`. **Export**: `POST /v1/agents/{id}/signing-keys/{chain}/export` — human-only, requires `X-Auth-Confirm` password header; returns `{ private_key, public_key, address, curve, chain }`; audit-logged; failed re-auth triggers account lockout.
+Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), Bitcoin (secp256k1), Solana (Ed25519), XRP (Ed25519, **30+ transaction types** via `xrpl_tx_json`), Cardano (Ed25519), Tron (secp256k1). All six chains support **on-chain transaction signing + broadcast** through the Intents API (`submit_transaction` / `sign_transaction`) — 1claw dispatches by chain family, auto-fetches chain data (Bitcoin UTXOs/fee, Solana blockhash, XRP sequence, Cardano protocol params, Tron ref block), signs in the HSM/TEE, and broadcasts. `value` is the major-unit decimal string. **XRP**: Pass `xrpl_tx_json` with any supported XRPL `TransactionType` (Payment, TrustSet, OfferCreate, OfferCancel, AccountSet, AccountDelete, EscrowCreate, EscrowFinish, EscrowCancel, PaymentChannelCreate/Fund/Claim, NFTokenMint/Burn/CreateOffer/AcceptOffer/CancelOffer, AMMCreate/Deposit/Withdraw/Bid/Delete/Vote, SetRegularKey, SignerListSet, DepositPreauth, CheckCreate/Cash/Cancel, TicketCreate, Clawback); Account/Sequence/Fee/LastLedgerSequence/SigningPubKey are auto-filled. Private keys stored in `__agent-keys` vault at `agents/{id}/chains/{chain}/private_key`. Provisioned by humans only. Use `provision_signing_key` MCP tool or `client.signingKeys.create()`. **Export**: `POST /v1/agents/{id}/signing-keys/{chain}/export` — human-only, requires `X-Auth-Confirm` password header; returns `{ private_key, public_key, address, curve, chain }`; audit-logged; failed re-auth triggers account lockout.
 
 #### Extended signing intents (v0.18)
 
