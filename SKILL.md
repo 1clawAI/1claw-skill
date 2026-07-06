@@ -1084,8 +1084,8 @@ Human-configured, server-enforced limits on what the Intents API allows:
 | Guardrail            | Field                | Effect                                                |
 | -------------------- | -------------------- | ----------------------------------------------------- |
 | Allowed destinations | `tx_to_allowlist`    | Only listed addresses permitted. Empty = unrestricted |
-| Max value per tx     | `tx_max_value_eth`   | Single-tx cap in ETH. NULL = unlimited                |
-| Daily spend limit    | `tx_daily_limit_eth` | Rolling 24h cumulative cap. NULL = unlimited          |
+| Max value per tx     | `tx_max_value`       | Single-tx cap in native major units (ETH, BTC, SOL, etc.). NULL = unlimited |
+| Daily spend limit    | `tx_daily_limit`     | Rolling 24h cap per chain family in native major units. NULL = unlimited    |
 | Allowed chains       | `tx_allowed_chains`  | Chain names. Empty = all chains                       |
 
 Agents **cannot** modify their own guardrails. Violations return 403 with a descriptive error.
@@ -1296,7 +1296,7 @@ When many agents operate in the same organization:
 - **Bulk provisioning:** Use the authenticated `POST /v1/agents` endpoint with a human API key to create many agents, or stagger self-enrollment calls to respect the 10-min per-email cooldown.
 - **Vault binding:** Set `vault_ids` on each agent to restrict JWT scope beyond what policies allow.
 - **Token TTL:** Shorten to 5 min for ephemeral tasks (`token_ttl_seconds: 300`), keep default 1h for long-running agents.
-- **Transaction guardrails:** Apply `tx_max_value_eth`, `tx_daily_limit_eth`, and `tx_allowed_chains` to all Intents API agents.
+- **Transaction guardrails:** Apply `tx_max_value`, `tx_daily_limit`, and `tx_allowed_chains` to all Intents API agents.
 - **Monitoring:** Filter the audit log by agent ID to track per-agent activity. Use `billing usage` to monitor org-wide consumption.
 
 ---
