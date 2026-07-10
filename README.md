@@ -6,7 +6,7 @@ An [OpenClaw](https://docs.openclaw.ai) skill that gives AI agents secure, HSM-b
 
 ## What it does
 
-Teaches agents to store, retrieve, rotate, and share secrets using the 1Claw vault. Secrets are encrypted with hardware security modules and fetched just-in-time — they never persist in conversation context. Also covers Treasury: Safe multisig wallets, agent EVM addresses, Smart Account deployment (ERC-4337), and agent access requests.
+Teaches agents to store, retrieve, rotate, and share secrets using the 1Claw vault. Secrets are encrypted with hardware security modules and fetched just-in-time — they never persist in conversation context. Also covers Treasury: Safe multisig wallets, agent EVM addresses, Smart Account deployment (ERC-4337), agent access requests, and Execution Intents (HTTP calls, database queries, and external service interactions through pre-configured bindings with credentials stored server-side).
 
 ## Files
 

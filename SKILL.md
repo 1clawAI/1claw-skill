@@ -96,6 +96,9 @@ metadata:
 - You want to deploy honeytoken canary secrets to detect unauthorized access (`POST /v1/risk/honeytokens`)
 - You want to check the risk verdict for a principal (`GET /v1/risk/verdicts/{type}/{id}`)
 - You want to enable DPoP token binding for proof-of-possession security (`dpop: true` in SDK config, `ONECLAW_DPOP=true` in MCP/CLI)
+- You want an agent to make HTTP calls or API requests through pre-configured bindings without exposing credentials (Execution Intents via `POST /v1/agents/{id}/execute`)
+- You want to set up execution intent bindings for an agent (HTTP, GraphQL, database, etc.) — human-only via `POST /v1/agents/{id}/bindings`
+- You want to list or test configured execution intent bindings (`list_bindings` MCP tool, `POST .../bindings/{id}/test`)
 
 ---
 
@@ -516,6 +519,28 @@ Sign a client-computed 32-byte digest **directly** (raw/blind signing) → 65-by
 | `hash`             | string | yes      |                       | 0x-prefixed 32-byte (64 hex char) digest        |
 | `chain`            | string | no       | `ethereum`            | Chain name                                     |
 | `signing_key_path` | string | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
+
+### execute_http
+
+Execute an HTTP request via a configured execution intent binding. The binding provides credentials (injected as bearer/basic/header/query) so the agent never sees raw secrets. Requires `execution_intents_enabled` on the agent.
+
+| Parameter      | Type   | Required | Default | Description                                         |
+| -------------- | ------ | -------- | ------- | --------------------------------------------------- |
+| `agent_id`     | string | no       |         | Agent ID (uses authenticated agent if omitted)      |
+| `binding`      | string | yes      |         | Binding name (as configured by human)               |
+| `method`       | string | no       | `GET`   | HTTP method (GET, POST, PUT, PATCH, DELETE)          |
+| `path`         | string | no       |         | URL path appended to binding base URL               |
+| `headers`      | object | no       |         | Additional request headers                          |
+| `body`         | object | no       |         | Request body (JSON)                                 |
+| `query`        | object | no       |         | Query parameters                                    |
+
+### list_bindings
+
+List all configured execution intent bindings for an agent. Returns binding names, types, and base URLs — never credentials.
+
+| Parameter  | Type   | Required | Description                                    |
+| ---------- | ------ | -------- | ---------------------------------------------- |
+| `agent_id` | string | no       | Agent ID (uses authenticated agent if omitted) |
 
 ### rotate_generate
 
