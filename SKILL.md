@@ -1124,6 +1124,11 @@ Human-configured, server-enforced limits on what the Intents API allows:
 | Max value per tx     | `tx_max_value`       | Single-tx cap in native major units (ETH, BTC, SOL, etc.). NULL = unlimited |
 | Daily spend limit    | `tx_daily_limit`     | Rolling 24h cap per chain family in native major units. NULL = unlimited    |
 | Allowed chains       | `tx_allowed_chains`  | Chain names. Empty = all chains                       |
+| Daily tx count       | `tx_max_per_day`     | Max transactions per UTC calendar day. NULL = unlimited |
+| Overhead budget      | `tx_overhead_budget` | Per-chain daily budget for non-value costs (rent, fees, energy) in native units |
+| ATA allowlist        | `solana_ata_allowlist` | Only listed Solana addresses may have ATAs created. Empty = unrestricted |
+
+Per-chain overrides via `per_chain_guardrails` also support `max_per_day`, `overhead_budget`, and `max_ata_creates_per_day`.
 
 Agents **cannot** modify their own guardrails. Violations return 403 with a descriptive error.
 
