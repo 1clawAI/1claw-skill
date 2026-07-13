@@ -99,6 +99,7 @@ metadata:
 - You want an agent to make HTTP calls or API requests through pre-configured bindings without exposing credentials (Execution Intents via `POST /v1/agents/{id}/execute`)
 - You want to set up execution intent bindings for an agent (HTTP, GraphQL, database, etc.) — human-only via `POST /v1/agents/{id}/bindings`
 - You want to list or test configured execution intent bindings (`list_bindings` MCP tool, `POST .../bindings/{id}/test`)
+- You want a binding credential to stay in sync with a vault secret automatically (use `credential_source: { type: "vault_ref", vault_id, path }` — live pointer, resolved at execution time)
 
 ---
 
