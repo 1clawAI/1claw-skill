@@ -1075,6 +1075,17 @@ When `intents_api_enabled = true` (set by a human):
 1. Agent **gains** transaction signing via the Intents API (keys stay in HSM)
 2. Agent is **blocked** from reading `private_key` and `ssh_key` secrets directly (403)
 
+#### TEE Enforcement (Pro+)
+
+Two additional agent-level flags upgrade "TEE-available" to "TEE-required":
+
+| Flag | Behavior when true |
+| --- | --- |
+| `intents_require_tee` | Rejects transaction/sign requests not routed through Shroud TEE (403). Direct Vault calls fail. |
+| `execution_require_tee` | Rejects execute requests not routed through Shroud, AND blocks ALL direct secret reads by the agent (not just private_key/ssh_key). Forces use of Execution Intents bindings. |
+
+Both require the base flag to be on first (`intents_api_enabled` / `execution_intents_enabled`). Verification uses HMAC `X-1Claw-TEE-Origin` header (Shroud sets it; Vault validates via shared `ONECLAW_TEE_ORIGIN_SECRET`). Dashboard: Signing tab toggles with confirmation dialog.
+
 Default signing key path auto-resolves: if the agent has a per-chain signing key provisioned, uses `agents/{id}/chains/{chain}/private_key`; otherwise falls back to `keys/{chain}-signer`. Network names (e.g. `sepolia`, `base`) map to canonical signing key chains (e.g. `ethereum`) via `signing_key_chain_for()`. Override with `signing_key_path` (restricted to `keys/*`, `wallets/*`, `agents/{id}/keys/*`, or `agents/{id}/chains/*` — other paths are rejected to prevent arbitrary secret exfiltration).
 
 #### Multi-chain signing keys (v0.18)
