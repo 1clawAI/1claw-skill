@@ -100,6 +100,9 @@ metadata:
 - You want to set up execution intent bindings for an agent (HTTP, GraphQL, database, etc.) — human-only via `POST /v1/agents/{id}/bindings`
 - You want to list or test configured execution intent bindings (`list_bindings` MCP tool, `POST .../bindings/{id}/test`)
 - You want a binding credential to stay in sync with a vault secret automatically (use `credential_source: { type: "vault_ref", vault_id, path }` — live pointer, resolved at execution time)
+- You want an agent to order a prepaid or gift card and pay for it with USDC via x402 without ever exposing the card number (Payment Card Vault: `order_card` / `POST /v1/agents/{id}/cards/order`)
+- You want to list, refresh, void, or reveal a payment card (reveal requires human `X-Auth-Confirm` re-auth or an explicit per-card agent reveal policy)
+- You want to bound how much an agent can spend ordering cards (per-agent `cards_enabled`, `card_max_order_usd`, `card_daily_limit_usd`, `card_payto_allowlist`)
 
 ---
 
@@ -618,6 +621,49 @@ Bootstrap a connected platform user — provisions vaults, agents, policies, and
 | `template_id`   | string | no       | Template ID to provision from (uses app default if omitted) |
 | `return_to`     | string | no       | URL to redirect the user to after claiming                |
 
+### order_card
+
+Order a US prepaid card for an agent, paid via x402 using the agent's Ethereum signing key (must hold USDC on Base). Requires `cards_enabled` on the agent. Auto-generates an `Idempotency-Key`. Never returns a PAN — the response is a masked card reference with `status: pending`.
+
+| Parameter    | Type   | Required | Description                                      |
+| ------------ | ------ | -------- | ------------------------------------------------ |
+| `agent_id`   | string | yes      | Agent UUID that will own and pay for the card    |
+| `amount_usd` | string | yes      | USD amount to load, e.g. `"25.00"`               |
+| `country`    | string | no       | Country code (defaults to US)                    |
+
+### order_gift_card
+
+Order a gift card for an agent (same payment flow as `order_card`). Use `search_gift_cards` first to find a `laso_server_id`.
+
+| Parameter        | Type   | Required | Description                                  |
+| ---------------- | ------ | -------- | -------------------------------------------- |
+| `agent_id`       | string | yes      | Agent UUID                                   |
+| `amount_usd`     | string | yes      | USD amount                                   |
+| `laso_server_id` | string | no       | Gift-card brand/server id from search        |
+
+### search_gift_cards
+
+Search available Laso gift-card brands/servers.
+
+| Parameter | Type   | Required | Description                        |
+| --------- | ------ | -------- | ---------------------------------- |
+| `query`   | string | no       | Brand/keyword filter               |
+| `country` | string | no       | Country code                       |
+
+### list_cards
+
+List payment cards for the caller (agents see only their own). Always masked to last4 — never returns a PAN. No parameters.
+
+### get_card_status
+
+Get a single card's status and balance (masked). Never returns a PAN.
+
+| Parameter | Type   | Required | Description  |
+| --------- | ------ | -------- | ------------ |
+| `card_id` | string | yes      | Card UUID    |
+
+Note: revealing full card details is intentionally **not** an MCP tool (to avoid PAN exposure in the model context window). Reveal is human-gated via the dashboard, SDK, or CLI with password re-authentication.
+
 ---
 
 ## REST API Quick Reference
@@ -747,6 +793,22 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `DELETE` | `/v1/agents/{id}/signing-keys/{chain}`             | Deactivate signing key for a chain — human-only                                                   |
 | `POST`   | `/v1/agents/{id}/signing-keys/{chain}/export`      | Export signing key with private key (requires `X-Auth-Confirm` password) — human-only              |
 | `GET`    | `/v1/agents/{id}/signing-keys/{chain}/balance`     | Query native + ERC-20 balances for the signing key address                                          |
+
+### Payment Cards (x402 card ordering — Laso)
+
+| Method   | Path                                  | Description                                                                                     |
+| -------- | ------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `POST`   | `/v1/agents/{id}/cards/order`         | Order a prepaid/gift card via x402 (agent; requires `cards_enabled` + `Idempotency-Key`; masked response, no PAN) |
+| `GET`    | `/v1/cards`                           | List payment cards (masked to last4)                                                            |
+| `GET`    | `/v1/cards/{card_id}`                 | Get a payment card (masked)                                                                      |
+| `POST`   | `/v1/cards/{card_id}/reveal`          | Reveal full card details — human: `X-Auth-Confirm` password; agent: only if per-card reveal policy allows; audit-logged |
+| `PATCH`  | `/v1/cards/{card_id}`                 | Update reveal policy / `void_after` — human-only                                                |
+| `POST`   | `/v1/cards/{card_id}/void`            | Void a card (1Claw-level lock; forward-looking only)                                            |
+| `POST`   | `/v1/cards/{card_id}/refresh`         | Refresh balance/status from Laso (rate-limited; clean 429 + `Retry-After`)                      |
+| `POST`   | `/v1/cards/import`                    | Manually import a card — human-only, full encrypted storage (CVV one-time-read)                 |
+| `POST`   | `/v1/cards/gift-cards/search`         | Search available Laso gift-card brands/servers                                                  |
+
+Ordering guardrails (per-agent, human-set, Pro+): `cards_enabled`, `card_max_order_usd`, `card_daily_limit_usd` (atomic 24h window), `card_payto_allowlist`, `card_reveal_enabled`. These bound the purchase, not how a revealed card is later spent — after reveal, a card can be used anywhere up to its balance and 1Claw has no further control.
 
 ### Shroud Activity
 
@@ -919,6 +981,12 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `signingKeys` | `rotate(agentId, chain)`                                                                                 | Rotate signing key for a chain         |
 | `signingKeys` | `deactivate(agentId, chain)`                                                                             | Deactivate signing key                 |
 | `signingKeys` | `export(agentId, chain, { password })`                                                                   | Export signing key with private key (requires password re-auth) |
+| `cards`   | `order(agentId, { kind, amount_usd, laso_server_id?, country? })`                                            | Order a prepaid/gift card via x402 (auto Idempotency-Key; masked response) |
+| `cards`   | `list()`, `get(cardId)`                                                                                      | List/get cards (masked to last4)       |
+| `cards`   | `reveal(cardId, { password? })`                                                                              | Reveal full card details (human: password re-auth; agent: per-card policy) |
+| `cards`   | `update(cardId, { agent_reveal?, max_reveals?, reveal_expires_at?, void_after? })`                           | Set reveal policy / void_after (human-only) |
+| `cards`   | `void(cardId)`, `refresh(cardId)`                                                                            | Void (forward-looking lock) / refresh balance from Laso |
+| `cards`   | `import({ pan, cvv, exp_month, exp_year, ... })`, `searchGiftCards({ query?, country? })`                    | Manual import (human-only) / search gift-card brands |
 | `access`  | `grantAgent(vaultId, agentId, permissions, { path?, conditions?, expires_at? })`                             | Grant agent access                     |
 | `access`  | `grantHuman(vaultId, userId, permissions, { path?, conditions?, expires_at? })`                              | Grant user access                      |
 | `access`  | `listGrants(vaultId)`                                                                                        | List policies                          |
