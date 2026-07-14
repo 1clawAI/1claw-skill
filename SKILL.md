@@ -808,7 +808,7 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST`   | `/v1/cards/import`                    | Manually import a card — human-only, full encrypted storage (CVV one-time-read)                 |
 | `POST`   | `/v1/cards/gift-cards/search`         | Search available Laso gift-card brands/servers                                                  |
 
-Ordering guardrails (per-agent, human-set, Pro+): `cards_enabled`, `card_max_order_usd`, `card_daily_limit_usd` (atomic 24h window), `card_payto_allowlist`, `card_reveal_enabled`. These bound the purchase, not how a revealed card is later spent — after reveal, a card can be used anywhere up to its balance and 1Claw has no further control.
+Ordering guardrails (per-agent, human-set, all tiers): `cards_enabled`, `card_max_order_usd`, `card_daily_limit_usd` (atomic 24h window), `card_payto_allowlist`, `card_reveal_enabled`. Free tier defaults: $25/order, $25/day, 5 cards/month. Pro: 50/mo. Team: 200/mo. Business/Enterprise: unlimited. A 3% platform fee per order is debited from prepaid credits. These bound the purchase, not how a revealed card is later spent — after reveal, a card can be used anywhere up to its balance and 1Claw has no further control.
 
 ### Shroud Activity
 
