@@ -97,7 +97,7 @@ metadata:
 - You want to check the risk verdict for a principal (`GET /v1/risk/verdicts/{type}/{id}`)
 - You want to enable DPoP token binding for proof-of-possession security (`dpop: true` in SDK config, `ONECLAW_DPOP=true` in MCP/CLI)
 - You want an agent to make HTTP calls or API requests through pre-configured bindings without exposing credentials (Execution Intents via `POST /v1/agents/{id}/execute`)
-- You want to set up execution intent bindings for an agent (HTTP, GraphQL, database, etc.) — human-only via `POST /v1/agents/{id}/bindings`
+- You want to set up execution intent bindings for an agent (HTTP, GraphQL) — human-only via `POST /v1/agents/{id}/bindings`
 - You want to list or test configured execution intent bindings (`list_bindings` MCP tool, `POST .../bindings/{id}/test`)
 - You want a binding credential to stay in sync with a vault secret automatically (use `credential_source: { type: "vault_ref", vault_id, path }` — live pointer, resolved at execution time)
 - You want an agent to order a prepaid or gift card and pay for it with USDC via x402 without ever exposing the card number (Payment Card Vault: `order_card` / `POST /v1/agents/{id}/cards/order`)
@@ -152,7 +152,7 @@ Add to your MCP client configuration. Only the API key is required — agent ID 
     "mcpServers": {
         "1claw": {
             "command": "npx",
-            "args": ["-y", "@1claw/mcp"],
+            "args": ["-y", "@1claw/mcp@0.41.4"],
             "env": {
                 "ONECLAW_AGENT_API_KEY": "<agent-api-key>"
             }
@@ -214,10 +214,10 @@ curl -H "Authorization: Bearer $TOKEN" https://api.1claw.xyz/v1/vaults
 
 1. Human registers an agent in the dashboard or via `POST /v1/agents` with an `auth_method` (`api_key` default, `mtls`, or `oidc_client_credentials`). For `api_key` agents → receives `agent_id` + `api_key` (prefix `ocv_`). For mTLS/OIDC agents → receives `agent_id` only (no API key).
 2. All agents auto-receive an Ed25519 SSH keypair (public key on agent record, private key in `__agent-keys` vault).
-3. API key agents exchange credentials: `POST /v1/auth/agent-token` with `{ "api_key": "<key>" }` (or `{ "agent_id": "<uuid>", "api_key": "<key>" }`) → returns `{ "access_token": "<jwt>", "expires_in": 3600, "agent_id": "<uuid>", "vault_ids": ["..."] }`. Agent ID is optional — the server resolves it from the key prefix.
+3. API key agents exchange credentials: `POST /v1/auth/agent-token` with `{ "api_key": "<key>" }` (or `{ "agent_id": "<uuid>", "api_key": "<key>" }`) → returns `{ "access_token": "<jwt>", "expires_in": 900, "agent_id": "<uuid>", "vault_ids": ["..."] }`. Agent ID is optional — the server resolves it from the key prefix.
 4. Agent uses `Authorization: Bearer <jwt>` on all subsequent requests.
 5. JWT scopes derive from the agent's access policies (path patterns). If no policies exist, scopes are empty (zero access). The agent's `vault_ids` are also included in the JWT — requests to unlisted vaults are rejected.
-6. Token TTL defaults to ~1 hour but can be set per-agent via `token_ttl_seconds`. The MCP server auto-refreshes 60s before expiry.
+6. Token TTL defaults to ~15 minutes (900s) but can be set per-agent via `token_ttl_seconds`. The MCP server auto-refreshes 60s before expiry.
 
 ### API key auth
 
@@ -663,6 +663,105 @@ Get a single card's status and balance (masked). Never returns a PAN.
 | `card_id` | string | yes      | Card UUID    |
 
 Note: revealing full card details is intentionally **not** an MCP tool (to avoid PAN exposure in the model context window). Reveal is human-gated via the dashboard, SDK, or CLI with password re-authentication.
+
+### get_signing_key_balance
+
+Get the native and token balances of an agent's signing key address on a specific chain.
+
+| Parameter | Type   | Required | Description                                                       |
+| --------- | ------ | -------- | ----------------------------------------------------------------- |
+| `chain`   | string | yes      | Chain name (e.g. ethereum, solana, bitcoin)                       |
+| `tokens`  | string | no       | Comma-separated token contract addresses for ERC-20/SPL balances  |
+
+### execute_intent
+
+Execute an intent through a pre-configured binding of any type. For plain HTTP prefer `execute_http`. Requires `execution_intents_enabled` on the agent.
+
+| Parameter        | Type   | Required | Default | Description                                                              |
+| ---------------- | ------ | -------- | ------- | ------------------------------------------------------------------------ |
+| `binding`        | string | yes      |         | Binding name (as configured by human)                                    |
+| `intent_type`    | string | no       | `http`  | Intent type matching the binding (e.g. `http`, `graphql`)                |
+| `params`         | object | no       | `{}`    | Executor params (e.g. `{ query, variables }` for graphql)                |
+| `execution_mode` | string | no       | `vault` | Execution surface: `vault` (standard) or `tee` (Shroud TEE, Business+)  |
+
+### create_binding
+
+Create a binding (credential handle) for the current agent. **Human-only** — the backend rejects agent-authenticated callers.
+
+| Parameter           | Type   | Required | Default | Description                                                                 |
+| ------------------- | ------ | -------- | ------- | --------------------------------------------------------------------------- |
+| `name`              | string | yes      |         | Binding name (alphanumeric, `-`, `_`; 1–64 chars)                           |
+| `binding_type`      | string | no       | `http`  | Binding type: http, graphql, etc.                                           |
+| `config`            | object | no       | `{}`    | Binding config (e.g. `{ base_url, auth_type, auth_header }`)               |
+| `guardrails`        | object | no       |         | Guardrails: `allowed_hosts`, `max_duration_ms`, `max_requests_per_minute`   |
+| `credential`        | object | no       |         | Legacy inline credential (prefer `credential_source`)                       |
+| `credential_source` | object | no       |         | `{ type: "inline", value }` or `{ type: "vault_ref", vault_id, path }`     |
+
+### test_binding
+
+Test connectivity for a binding. Runs through the same SSRF/allowlist checks as execution.
+
+| Parameter    | Type   | Required | Description                                      |
+| ------------ | ------ | -------- | ------------------------------------------------ |
+| `binding_id` | string | yes      | The binding's UUID                               |
+| `timeout_ms` | number | no       | Connectivity timeout in milliseconds (default 5000) |
+
+### list_executions
+
+List recent execution-intent events for the current agent: status, intent_type, duration, cost, and redactions.
+
+| Parameter | Type   | Required | Default | Description           |
+| --------- | ------ | -------- | ------- | --------------------- |
+| `limit`   | number | no       | 50      | Max events to return  |
+| `offset`  | number | no       | 0       | Pagination offset     |
+
+### platform_reissue_claim
+
+Reissue a claim URL for an already-bootstrapped connection. Use when the original 10-minute claim token has expired — no resources are re-provisioned.
+
+| Parameter       | Type   | Required | Description                                        |
+| --------------- | ------ | -------- | -------------------------------------------------- |
+| `connection_id` | string | yes      | The connection ID to reissue a claim for            |
+| `return_to`     | string | no       | URL to redirect the user to after claiming          |
+
+### platform_rotate_key
+
+Rotate the API key for a platform app. Returns a new one-time API key.
+
+| Parameter            | Type   | Required | Description                                              |
+| -------------------- | ------ | -------- | -------------------------------------------------------- |
+| `app_id`             | string | yes      | The platform app ID whose key should be rotated          |
+| `api_key_expires_at` | string | no       | ISO 8601 expiration timestamp for the new key            |
+
+### list_approvals
+
+List approval requests. Returns approvals awaiting human decision.
+
+| Parameter | Type   | Required | Description                                                 |
+| --------- | ------ | -------- | ----------------------------------------------------------- |
+| `status`  | string | no       | Filter: `pending`, `approved`, `rejected`, `expired`        |
+| `limit`   | number | no       | Max approvals to return (default 20)                        |
+
+### get_approval
+
+Get details of a specific approval request.
+
+| Parameter     | Type   | Required | Description                    |
+| ------------- | ------ | -------- | ------------------------------ |
+| `approval_id` | string | yes      | UUID of the approval request   |
+
+### request_approval
+
+Request human approval for a policy change or sensitive action. Agent-only — creates a pending approval directed to the agent's creator.
+
+| Parameter     | Type   | Required | Default | Description                                                                   |
+| ------------- | ------ | -------- | ------- | ----------------------------------------------------------------------------- |
+| `action`      | string | yes      |         | Action type (e.g. `policy_change`, `access_request`)                          |
+| `target_type` | string | yes      |         | Target resource type (e.g. `policy`, `vault`, `secret`)                       |
+| `target_id`   | string | yes      |         | ID of the target resource                                                     |
+| `summary`     | object | yes      |         | JSON summary of the change (for `policy_change`: `{ vault_id, paths, ... }`)  |
+| `reason`      | string | no       |         | Human-readable reason                                                         |
+| `risk_tier`   | number | no       | 1       | Risk level 1–5 (1=low, 5=critical)                                           |
 
 ---
 
