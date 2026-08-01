@@ -103,6 +103,15 @@ metadata:
 - You want an agent to order a prepaid or gift card and pay for it with USDC via x402 without ever exposing the card number (Payment Card Vault: `order_card` / `POST /v1/agents/{id}/cards/order`)
 - You want to list, refresh, void, or reveal a payment card (reveal requires human `X-Auth-Confirm` re-auth or an explicit per-card agent reveal policy)
 - You want to bound how much an agent can spend ordering cards (per-agent `cards_enabled`, `card_max_order_usd`, `card_daily_limit_usd`, `card_payto_allowlist`)
+- You want to store or retrieve agent memory across sessions (scratch, durable, semantic tiers via `POST/GET /v1/agents/{id}/memory`)
+- You want to search agent memory using semantic similarity (`POST /v1/agents/{id}/memory/search`)
+- You want to create or manage cron/webhook/event-driven automations (`POST /v1/automations`, `POST /v1/automations/{id}/trigger`)
+- You want to deploy an agent in a managed cloud runtime (`POST /v1/runtimes`, `POST /v1/runtimes/{id}/start`)
+- You want to stream logs from a running cloud runtime (`GET /v1/runtimes/{id}/logs`)
+- You want to make an agent discoverable in the public directory (`POST /v1/agents/{id}/discovery`, `POST /v1/discovery/agents`)
+- You want to search or browse the agent directory (`GET /v1/discovery/agents`)
+- You are building a platform integration that needs to perform CRUD on connected user resources (Platform Delegation via `X-Platform-Connection` header)
+- You want to configure OAuth2 credential bindings for Execution Intents (authorization_code or client_credentials grant with automatic token refresh)
 
 ---
 
@@ -762,6 +771,114 @@ Request human approval for a policy change or sensitive action. Agent-only — c
 | `summary`     | object | yes      |         | JSON summary of the change (for `policy_change`: `{ vault_id, paths, ... }`)  |
 | `reason`      | string | no       |         | Human-readable reason                                                         |
 | `risk_tier`   | number | no       | 1       | Risk level 1–5 (1=low, 5=critical)                                           |
+
+### memory_put
+
+Store a memory entry for the agent (scratch, durable, or semantic tier).
+
+| Parameter | Type   | Required | Default    | Description                                          |
+| --------- | ------ | -------- | ---------- | ---------------------------------------------------- |
+| `key`     | string | yes      |            | Memory key identifier                                |
+| `value`   | string | yes      |            | Memory value (text content)                          |
+| `tier`    | string | no       | `durable`  | Memory tier: `scratch`, `durable`, or `semantic`     |
+| `metadata`| object | no       |            | Optional JSON metadata                               |
+
+### memory_get
+
+Retrieve a memory entry by key.
+
+| Parameter | Type   | Required | Description      |
+| --------- | ------ | -------- | ---------------- |
+| `key`     | string | yes      | Memory key       |
+
+### memory_list
+
+List memory entries, optionally filtered by tier.
+
+| Parameter | Type   | Required | Description                                      |
+| --------- | ------ | -------- | ------------------------------------------------ |
+| `tier`    | string | no       | Filter by tier: `scratch`, `durable`, `semantic` |
+| `limit`   | number | no       | Max entries to return (default 50)               |
+
+### memory_search
+
+Semantic vector search over agent memory entries (semantic tier only).
+
+| Parameter   | Type   | Required | Default | Description                             |
+| ----------- | ------ | -------- | ------- | --------------------------------------- |
+| `query`     | string | yes      |         | Natural language search query           |
+| `limit`     | number | no       | 10      | Max results                             |
+| `threshold` | number | no       | 0.7     | Minimum similarity score (0.0–1.0)      |
+
+### delete_memory
+
+Delete a memory entry by key.
+
+| Parameter | Type   | Required | Description      |
+| --------- | ------ | -------- | ---------------- |
+| `key`     | string | yes      | Memory key       |
+
+### list_automations
+
+List automations for the org.
+
+| Parameter | Type   | Required | Description                                   |
+| --------- | ------ | -------- | --------------------------------------------- |
+| `status`  | string | no       | Filter: `active`, `paused`, `disabled`        |
+
+### trigger_automation
+
+Manually trigger an automation run.
+
+| Parameter       | Type   | Required | Description              |
+| --------------- | ------ | -------- | ------------------------ |
+| `automation_id` | string | yes      | UUID of the automation   |
+| `payload`       | object | no       | Optional trigger payload |
+
+### list_runtimes
+
+List cloud runtimes for the org.
+
+| Parameter | Type   | Required | Description                                          |
+| --------- | ------ | -------- | ---------------------------------------------------- |
+| `status`  | string | no       | Filter: `running`, `stopped`, `deploying`, `error`   |
+
+### manage_runtime
+
+Start or stop a cloud runtime.
+
+| Parameter    | Type   | Required | Description                    |
+| ------------ | ------ | -------- | ------------------------------ |
+| `runtime_id` | string | yes      | UUID of the runtime            |
+| `action`     | string | yes      | `start` or `stop`             |
+
+### runtime_status
+
+Get the current status and health of a runtime.
+
+| Parameter    | Type   | Required | Description         |
+| ------------ | ------ | -------- | ------------------- |
+| `runtime_id` | string | yes      | UUID of the runtime |
+
+### runtime_logs
+
+Stream recent logs from a cloud runtime.
+
+| Parameter    | Type   | Required | Default | Description                    |
+| ------------ | ------ | -------- | ------- | ------------------------------ |
+| `runtime_id` | string | yes      |         | UUID of the runtime            |
+| `lines`      | number | no       | 100     | Number of recent lines         |
+| `follow`     | boolean| no       | false   | Stream new logs in real-time   |
+
+### search_directory
+
+Search the public agent discovery directory.
+
+| Parameter  | Type   | Required | Description                                |
+| ---------- | ------ | -------- | ------------------------------------------ |
+| `query`    | string | no       | Search term                                |
+| `category` | string | no       | Filter by category                         |
+| `limit`    | number | no       | Max results (default 20)                   |
 
 ---
 
