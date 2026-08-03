@@ -162,7 +162,7 @@ Add to your MCP client configuration. Only the API key is required — agent ID 
     "mcpServers": {
         "1claw": {
             "command": "npx",
-            "args": ["-y", "@1claw/mcp@0.41.4"],
+            "args": ["-y", "@1claw/mcp@0.43.1"],
             "env": {
                 "ONECLAW_AGENT_API_KEY": "<agent-api-key>"
             }
