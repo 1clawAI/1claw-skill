@@ -105,7 +105,8 @@ metadata:
 - You want to bound how much an agent can spend ordering cards (per-agent `cards_enabled`, `card_max_order_usd`, `card_daily_limit_usd`, `card_payto_allowlist`)
 - You want to store or retrieve agent memory across sessions (scratch, durable, semantic tiers via `POST/GET /v1/agents/{id}/memory`)
 - You want to search agent memory using semantic similarity (`POST /v1/agents/{id}/memory/search`)
-- You want to create or manage cron/webhook/event-driven automations (`POST /v1/automations` requires `workflow_spec` + `agent_id`; cron needs `cron_expr`; `schedule` alias → `cron`)
+- You want to create or manage automations with AI steps, conditional logic, and variable passing (`POST /v1/automations` requires `workflow_spec` + `agent_id`; 14 step types including `ai_generate`, `memory_get/put/search`, `notify`, `approval_request`, `condition`)
+- You want to browse automation presets or use the NL assist to draft workflows (`GET /v1/automations/presets`, `POST /v1/automations/assist/draft`)
 - You want to deploy an agent in a managed cloud runtime (`POST /v1/runtimes`, `POST /v1/runtimes/{id}/start`)
 - You want an interactive shell into a running runtime (`POST /v1/runtimes/{id}/shell/session` — human step-up auth; dashboard Terminal tab)
 - You want to stream logs from a running cloud runtime (`GET /v1/runtimes/{id}/logs`)
@@ -162,7 +163,7 @@ Add to your MCP client configuration. Only the API key is required — agent ID 
     "mcpServers": {
         "1claw": {
             "command": "npx",
-            "args": ["-y", "@1claw/mcp@0.43.1"],
+            "args": ["-y", "@1claw/mcp@0.43.4"],
             "env": {
                 "ONECLAW_AGENT_API_KEY": "<agent-api-key>"
             }
