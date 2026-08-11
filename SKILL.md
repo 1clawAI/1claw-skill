@@ -114,6 +114,8 @@ metadata:
 - You want to search or browse the agent directory (`GET /v1/discovery/agents`)
 - You are building a platform integration that needs to perform CRUD on connected user resources (Platform Delegation via `X-Platform-Connection` header)
 - You want to configure OAuth2 credential bindings for Execution Intents (authorization_code or client_credentials grant with automatic token refresh)
+- You want to connect an agent to external services (Google, GitHub, Slack, Discord, etc.) via OAuth — human initiates flow, agent uses tokens via execution intents (`GET /v1/oauth/providers`, `POST /v1/agents/{id}/oauth/connect`, `list_oauth_providers` MCP tool)
+- You want to manage OAuth app credentials for your org (`POST /v1/agents/{id}/oauth/app-credentials`)
 - You want to chat with an agent via the Shroud LLM proxy with persistent conversation history (`send_chat_message`, `list_chat_conversations` MCP tools; `POST /v1/agents/{id}/chat` SSE streaming)
 - You want to connect an agent to Telegram, WhatsApp, or Discord for bi-directional messaging (`create_channel`, `list_channels`, `send_channel_message` MCP tools)
 - You want to send images via agent channels (DALL-E generation + Telegram `sendPhoto` delivery)
@@ -934,6 +936,20 @@ Send a message via a configured messaging channel.
 | `channel_id` | string | yes      | Channel UUID                               |
 | `message`    | string | yes      | Message content                            |
 
+### list_oauth_providers
+
+List all available OAuth providers from the registry (Google, GitHub, Slack, etc.).
+
+No parameters required.
+
+### list_oauth_connections
+
+List OAuth connected accounts for an agent.
+
+| Parameter    | Type   | Required | Description                                |
+| ------------ | ------ | -------- | ------------------------------------------ |
+| `agent_id`   | string | yes      | Agent UUID                                 |
+
 ---
 
 ## REST API Quick Reference
@@ -982,6 +998,19 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `POST`   | `/v1/oauth/authorize`      | Approve/deny OAuth authorization (issues authorization code)     |
 | `POST`   | `/v1/oauth/token`          | Exchange authorization code for access_token + id_token (public) |
 | `GET`    | `/v1/oauth/userinfo`       | Get user info (sub, email, name, wallet_address)                 |
+
+### OAuth Connected Accounts
+
+| Method   | Path                                                     | Description                                                     |
+| -------- | -------------------------------------------------------- | --------------------------------------------------------------- |
+| `GET`    | `/v1/oauth/providers`                                    | List available OAuth providers (public, no auth)                |
+| `POST`   | `/v1/agents/{id}/oauth/connect`                          | Initiate OAuth flow for agent (human-only, returns auth URL)    |
+| `GET`    | `/v1/agents/{id}/oauth/connections`                      | List agent's OAuth connections                                  |
+| `POST`   | `/v1/agents/{id}/oauth/disconnect/{bindingId}`           | Revoke tokens and delete binding (human-only)                   |
+| `POST`   | `/v1/agents/{id}/oauth/app-credentials`                  | Save OAuth app credentials (human-only, secret encrypted)       |
+| `GET`    | `/v1/agents/{id}/oauth/app-credentials`                  | List OAuth app credentials (secrets redacted)                   |
+| `DELETE` | `/v1/agents/{id}/oauth/app-credentials/{providerSlug}`   | Delete OAuth app credentials                                    |
+| `GET`    | `/v1/oauth/callback`                                     | Public OAuth provider redirect callback                         |
 
 ### Vaults
 
@@ -1351,6 +1380,13 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `platform`| `listSpendPolicies(appId)`                                                                                   | List active spend policies             |
 | `platform`| `setUserSpendPolicy(connectionId, { ... })`                                                                  | Set per-user spend policy override     |
 | `platform`| `deleteSpendPolicy(appId, policyId)`                                                                         | Deactivate a spend policy              |
+| `oauthConnect` | `listProviders()`                                                                                     | List available OAuth providers (public) |
+| `oauthConnect` | `listConnections(agentId)`                                                                            | List agent's OAuth connections         |
+| `oauthConnect` | `connect(agentId, { provider_slug, scopes?, redirect_after? })`                                       | Initiate OAuth flow (human-only)       |
+| `oauthConnect` | `disconnect(agentId, bindingId)`                                                                      | Disconnect OAuth binding               |
+| `oauthConnect` | `saveAppCredentials(agentId, { provider_slug, client_id, client_secret, redirect_uri? })`             | Save org OAuth credentials             |
+| `oauthConnect` | `listAppCredentials(agentId)`                                                                         | List app credentials (secrets redacted) |
+| `oauthConnect` | `deleteAppCredentials(agentId, providerSlug)`                                                         | Delete app credentials                 |
 | `org`     | `listMembers()`                                                                                              | List org members                       |
 | `org`     | `updateMemberRole(userId, role)`                                                                             | Update member role                     |
 | `org`     | `removeMember(userId)`                                                                                       | Remove member                          |
