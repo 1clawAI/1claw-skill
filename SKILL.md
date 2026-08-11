@@ -119,6 +119,9 @@ metadata:
 - You want to chat with an agent via the Shroud LLM proxy with persistent conversation history (`send_chat_message`, `list_chat_conversations` MCP tools; `POST /v1/agents/{id}/chat` SSE streaming)
 - You want to connect an agent to Telegram, WhatsApp, or Discord for bi-directional messaging (`create_channel`, `list_channels`, `send_channel_message` MCP tools)
 - You want to send images via agent channels (DALL-E generation + Telegram `sendPhoto` delivery)
+- You want to use the runtime tool registry to configure which tools are available to your deployed agent (12 pluggable modules: image-gen, web-search, memory-tools, file-handler, code-exec, google-tools, github-tools, slack-tools, social-tools, vault-tools, notify-tools, sub-agents)
+- You want to set up sub-agent orchestration (discover agents, delegate tasks, list org agents, create sub-tasks via automations)
+- You want an agent to communicate with another agent (agent-to-agent chat via `delegate_task` runtime tool or direct `POST /v1/agents/{id}/chat`)
 
 ---
 
@@ -876,6 +879,40 @@ Stream recent logs from a cloud runtime.
 | `runtime_id` | string | yes      |         | UUID of the runtime            |
 | `lines`      | number | no       | 100     | Number of recent lines         |
 | `follow`     | boolean| no       | false   | Stream new logs in real-time   |
+
+### Runtime Tool Registry (v0.45)
+
+Cloud Runtimes include 12 pluggable tool modules that can be enabled/disabled per runtime template:
+
+| Module | Description |
+| ------ | ----------- |
+| `image-gen` | Image generation (DALL-E, Stable Diffusion) |
+| `web-search` | Web search and URL fetching |
+| `memory-tools` | Agent memory read/write/search |
+| `file-handler` | File upload, download, and processing |
+| `code-exec` | Code execution sandbox |
+| `google-tools` | Google Workspace integration (Docs, Sheets, Calendar) |
+| `github-tools` | GitHub API access (issues, PRs, repos) |
+| `slack-tools` | Slack messaging and channel management |
+| `social-tools` | Social media integrations (X/Twitter, LinkedIn) |
+| `vault-tools` | 1Claw vault secret access |
+| `notify-tools` | Notifications (email, SMS, push) |
+| `sub-agents` | Sub-agent discovery, delegation, and task management |
+
+Per-template tool configs (`hermes`, `openclaw`, `openclaude`) define default enabled tools for each runtime template. Dashboard `RuntimeToolsCard` shows active tools and allows toggling per runtime.
+
+### Sub-Agent Framework
+
+Runtime tools for inter-agent coordination (requires the `sub-agents` tool module):
+
+| Tool | Description |
+| ---- | ----------- |
+| `discover_agents` | Search the org agent directory for agents with specific capabilities |
+| `delegate_task` | Send a task to another agent via agent-to-agent chat |
+| `list_my_sub_agents` | List agents in the same org available for delegation |
+| `create_sub_task` | Trigger an automation on a sub-agent (orchestrator pattern) |
+
+The sub-agent framework enables orchestrator-worker patterns where a primary agent discovers specialist agents via `GET /v1/agents/org-directory`, delegates tasks via agent-to-agent chat (`POST /v1/agents/{id}/chat`), and supervises execution.
 
 ### search_directory
 
