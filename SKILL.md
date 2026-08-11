@@ -114,6 +114,9 @@ metadata:
 - You want to search or browse the agent directory (`GET /v1/discovery/agents`)
 - You are building a platform integration that needs to perform CRUD on connected user resources (Platform Delegation via `X-Platform-Connection` header)
 - You want to configure OAuth2 credential bindings for Execution Intents (authorization_code or client_credentials grant with automatic token refresh)
+- You want to chat with an agent via the Shroud LLM proxy with persistent conversation history (`send_chat_message`, `list_chat_conversations` MCP tools; `POST /v1/agents/{id}/chat` SSE streaming)
+- You want to connect an agent to Telegram, WhatsApp, or Discord for bi-directional messaging (`create_channel`, `list_channels`, `send_channel_message` MCP tools)
+- You want to send images via agent channels (DALL-E generation + Telegram `sendPhoto` delivery)
 
 ---
 
@@ -882,6 +885,55 @@ Search the public agent discovery directory.
 | `category` | string | no       | Filter by category                         |
 | `limit`    | number | no       | Max results (default 20)                   |
 
+### send_chat_message
+
+Send a message to an agent and get a response via Shroud LLM proxy.
+
+| Parameter         | Type   | Required | Description                                |
+| ----------------- | ------ | -------- | ------------------------------------------ |
+| `agent_id`        | string | yes      | Agent UUID                                 |
+| `message`         | string | yes      | Message content                            |
+| `conversation_id` | string | no       | Existing conversation (creates new if omitted) |
+| `model`           | string | no       | LLM model override                         |
+| `provider`        | string | no       | LLM provider override                      |
+
+### list_chat_conversations
+
+List chat conversations for an agent.
+
+| Parameter  | Type   | Required | Description                                |
+| ---------- | ------ | -------- | ------------------------------------------ |
+| `agent_id` | string | yes      | Agent UUID                                 |
+
+### create_channel
+
+Create a messaging channel for an agent (Telegram, WhatsApp, or Discord).
+
+| Parameter       | Type   | Required | Description                                |
+| --------------- | ------ | -------- | ------------------------------------------ |
+| `agent_id`      | string | yes      | Agent UUID                                 |
+| `channel_type`  | string | yes      | `telegram`, `whatsapp`, or `discord`       |
+| `channel_name`  | string | yes      | Display name for the channel               |
+| `metadata`      | object | no       | Platform-specific config (bot token, etc.) |
+
+### list_channels
+
+List messaging channels for an agent.
+
+| Parameter  | Type   | Required | Description                                |
+| ---------- | ------ | -------- | ------------------------------------------ |
+| `agent_id` | string | yes      | Agent UUID                                 |
+
+### send_channel_message
+
+Send a message via a configured messaging channel.
+
+| Parameter    | Type   | Required | Description                                |
+| ------------ | ------ | -------- | ------------------------------------------ |
+| `agent_id`   | string | yes      | Agent UUID                                 |
+| `channel_id` | string | yes      | Channel UUID                               |
+| `message`    | string | yes      | Message content                            |
+
 ---
 
 ## REST API Quick Reference
@@ -1149,6 +1201,31 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `GET`    | `/v1/platform/apps/{id}/spend-policies`          | List active spend policies for the app                 |
 | `PUT`    | `/v1/platform/connections/{id}/spend-policy`     | Set per-user spend policy override                     |
 | `DELETE` | `/v1/platform/apps/{id}/spend-policies/{pid}`    | Deactivate a spend policy                              |
+
+### Agent Chat (v0.43+)
+
+| Method   | Path                                                | Description                                    |
+| -------- | --------------------------------------------------- | ---------------------------------------------- |
+| `POST`   | `/v1/agents/{id}/chat`                              | Send message (SSE streaming response)          |
+| `POST`   | `/v1/agents/{id}/chat/unlock`                       | Step-up auth to unlock chat                    |
+| `GET`    | `/v1/agents/{id}/chat/conversations`                | List conversations                             |
+| `GET`    | `/v1/agents/{id}/chat/conversations/{cid}`          | Get conversation with messages                 |
+| `DELETE` | `/v1/agents/{id}/chat/conversations/{cid}`          | Delete conversation                            |
+| `POST`   | `/v1/runtimes/{id}/chat`                            | Runtime chat (SSE streaming)                   |
+| `POST`   | `/v1/runtimes/{id}/chat/unlock`                     | Unlock runtime chat                            |
+
+### Messaging Channels (v0.43+)
+
+| Method   | Path                                                | Description                                    |
+| -------- | --------------------------------------------------- | ---------------------------------------------- |
+| `POST`   | `/v1/agents/{id}/channels`                          | Create messaging channel (Telegram/WhatsApp/Discord) |
+| `GET`    | `/v1/agents/{id}/channels`                          | List agent channels                            |
+| `PATCH`  | `/v1/agents/{id}/channels/{cid}`                    | Update channel config                          |
+| `DELETE` | `/v1/agents/{id}/channels/{cid}`                    | Delete channel                                 |
+| `POST`   | `/v1/agents/{id}/channels/{cid}/send`               | Send message via channel                       |
+| `POST`   | `/v1/agents/{id}/channels/{cid}/test`               | Test connectivity                              |
+| `POST`   | `/v1/agents/{id}/channels/{cid}/refresh-webhook`    | Refresh webhook registration                   |
+| `GET`    | `/v1/agents/{id}/channels/{cid}/messages`           | List channel messages                          |
 
 ### Other
 
