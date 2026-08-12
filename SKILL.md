@@ -119,6 +119,9 @@ metadata:
 - You want to chat with an agent via the Shroud LLM proxy with persistent conversation history (`send_chat_message`, `list_chat_conversations` MCP tools; `POST /v1/agents/{id}/chat` SSE streaming)
 - You want to connect an agent to Telegram, WhatsApp, or Discord for bi-directional messaging (`create_channel`, `list_channels`, `send_channel_message` MCP tools)
 - You want to send images via agent channels (DALL-E generation + Telegram `sendPhoto` delivery)
+- You want to use slash commands in messaging channels (12 built-in commands: /help, /new, /model, /personality, /retry, /undo, /compress, /stop, /status, /skills, /usage, /sethome; enable via `slash_commands_enabled`)
+- You want voice memo transcription in Telegram channels (Whisper API auto-transcription; enable via `voice_transcription_enabled`)
+- You want cross-platform conversation continuity (`unified_conversation_id` links channels to a shared conversation context)
 - You want to use the runtime tool registry to configure which tools are available to your deployed agent (12 pluggable modules: image-gen, web-search, memory-tools, file-handler, code-exec, google-tools, github-tools, slack-tools, social-tools, vault-tools, notify-tools, sub-agents)
 - You want to set up sub-agent orchestration (discover agents, delegate tasks, list org agents, create sub-tasks via automations)
 - You want an agent to communicate with another agent (agent-to-agent chat via `delegate_task` runtime tool or direct `POST /v1/agents/{id}/chat`)
@@ -1309,6 +1312,8 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `POST`   | `/v1/agents/{id}/channels/{cid}/test`               | Test connectivity                              |
 | `POST`   | `/v1/agents/{id}/channels/{cid}/refresh-webhook`    | Refresh webhook registration                   |
 | `GET`    | `/v1/agents/{id}/channels/{cid}/messages`           | List channel messages                          |
+
+**Hermes-native channel features (v0.45):** Channels support `slash_commands_enabled` (12 built-in commands), `voice_transcription_enabled` (Telegram voice→text via Whisper), `unified_conversation_id` (cross-platform continuity), `auto_respond_in_progress` (concurrency guard), and `is_home_platform` (primary interface marker set via /sethome). The `notify` automation step supports `channel` type for delivering outputs to messaging channels.
 
 ### Other
 
