@@ -125,6 +125,13 @@ metadata:
 - You want to use the runtime tool registry to configure which tools are available to your deployed agent (12 pluggable modules: image-gen, web-search, memory-tools, file-handler, code-exec, google-tools, github-tools, slack-tools, social-tools, vault-tools, notify-tools, sub-agents)
 - You want to set up sub-agent orchestration (discover agents, delegate tasks, list org agents, create sub-tasks via automations)
 - You want an agent to communicate with another agent (agent-to-agent chat via `delegate_task` runtime tool or direct `POST /v1/agents/{id}/chat`)
+- You want to set up human-controlled agent-to-agent delegation (`POST /v1/agents/{id}/delegations` — human-only creation; agents cannot create/modify/revoke delegations)
+- You want to control which tools a delegated agent can use (tool allowlist/blocklist on `agent_delegations`)
+- You want to limit delegation depth to prevent recursive chains (`max_depth` 1–10 on delegation records)
+- You want to rate-limit how often an agent delegates to another (`max_daily_delegations` on delegation records)
+- You want to choose delegation execution mode — `caller` (delegate uses own credentials), `target` (delegate uses target config), or `both` (per-invocation choice)
+- You want to create a sub-agent with pre-configured delegation rules (dashboard wizard at `/agents/sub-agent-wizard` with 6 role presets)
+- You want to check which agents your agent is authorized to delegate to (`GET /v1/agents/{id}/delegations/effective`)
 - You want to implement "Sign in with 1Claw" with refresh tokens and token revocation (OAuth2 with `offline_access` scope, `POST /v1/oauth/revoke`, `DELETE /v1/oauth/consent/{app_slug}`)
 - You want to browse the platform marketplace for approved apps (`GET /v1/platform/marketplace`)
 - You want to check platform app statistics (`GET /v1/platform/apps/{id}/stats`)
@@ -908,18 +915,57 @@ Cloud Runtimes include 12 pluggable tool modules that can be enabled/disabled pe
 
 Per-template tool configs (`hermes`, `openclaw`, `openclaude`) define default enabled tools for each runtime template. Dashboard `RuntimeToolsCard` shows active tools and allows toggling per runtime.
 
-### Sub-Agent Framework
+### Sub-Agent Framework & Delegation (v0.46)
 
 Runtime tools for inter-agent coordination (requires the `sub-agents` tool module):
 
 | Tool | Description |
 | ---- | ----------- |
 | `discover_agents` | Search the org agent directory for agents with specific capabilities |
-| `delegate_task` | Send a task to another agent via agent-to-agent chat |
-| `list_my_sub_agents` | List agents in the same org available for delegation |
+| `delegate_task` | Send a task to another agent via agent-to-agent chat (requires active delegation) |
+| `list_my_sub_agents` | List agents in the same org with delegation authorization status |
 | `create_sub_task` | Trigger an automation on a sub-agent (orchestrator pattern) |
+| `get_delegation_status` | Check which agents the caller is authorized to delegate to |
 
 The sub-agent framework enables orchestrator-worker patterns where a primary agent discovers specialist agents via `GET /v1/agents/org-directory`, delegates tasks via agent-to-agent chat (`POST /v1/agents/{id}/chat`), and supervises execution.
+
+#### Agent-to-Agent Delegation (v0.46)
+
+Human-controlled authorization framework. Agents **cannot** delegate to other agents without an explicit `agent_delegations` record created by a human. Agents cannot create, modify, or revoke their own delegations (403).
+
+**Delegation modes:**
+- `caller` (default) — delegate executes with its own credentials and tools (most secure)
+- `target` — delegate executes with the target agent's configuration
+- `both` — either mode can be requested per invocation
+
+**Security model:**
+- Self-delegation is rejected (400)
+- Tool allowlist/blocklist enforced per delegation
+- Daily rate limit (`max_daily_delegations`) enforced via `delegation_events` count
+- Depth limit (`max_depth`, 1–10) prevents recursive delegation chains (tracked via `X-Delegation-Depth` header)
+- Expired delegations rejected (403)
+- All mutations audit-logged: `agent.delegation.created`, `.updated`, `.revoked`, `.invoked`, `.blocked`
+
+**Chat enforcement:** Cross-agent `POST /v1/agents/{id}/chat` requires active, non-expired delegation from caller to target. Delegation engine checks tool allowlist, daily rate limit, and depth limit.
+
+**Endpoints:**
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| `POST` | `/v1/agents/{id}/delegations` | Create delegation (human-only) |
+| `GET` | `/v1/agents/{id}/delegations` | List delegations (human: all; agent: own) |
+| `GET` | `/v1/agents/{id}/delegations/effective` | Agent-callable — delegations where agent is delegator |
+| `GET` | `/v1/agents/{id}/delegations/{did}` | Get delegation details |
+| `PATCH` | `/v1/agents/{id}/delegations/{did}` | Update delegation (human-only) |
+| `DELETE` | `/v1/agents/{id}/delegations/{did}` | Revoke delegation (human-only) |
+
+**SDK:** `client.agents.createDelegation()`, `.listDelegations()`, `.getDelegation()`, `.updateDelegation()`, `.revokeDelegation()`, `.getEffectiveDelegations()`.
+
+**MCP:** `list_delegations`, `create_delegation`, `get_effective_delegations`.
+
+**CLI:** `1claw agent delegation create|list|get|update|revoke <agent-id>`.
+
+**Dashboard:** Sub-agent creation wizard at `/agents/sub-agent-wizard` (4-step flow, 6 role presets: Research, Image Gen, Treasury, Comms, Code, Custom). Delegations tab on agent detail page (outbound/inbound tables with create/edit/revoke dialogs). Sub-Agents card on runtime detail page with authorization badges.
 
 ### search_directory
 
