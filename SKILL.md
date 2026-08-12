@@ -122,6 +122,10 @@ metadata:
 - You want to use the runtime tool registry to configure which tools are available to your deployed agent (12 pluggable modules: image-gen, web-search, memory-tools, file-handler, code-exec, google-tools, github-tools, slack-tools, social-tools, vault-tools, notify-tools, sub-agents)
 - You want to set up sub-agent orchestration (discover agents, delegate tasks, list org agents, create sub-tasks via automations)
 - You want an agent to communicate with another agent (agent-to-agent chat via `delegate_task` runtime tool or direct `POST /v1/agents/{id}/chat`)
+- You want to implement "Sign in with 1Claw" with refresh tokens and token revocation (OAuth2 with `offline_access` scope, `POST /v1/oauth/revoke`, `DELETE /v1/oauth/consent/{app_slug}`)
+- You want to browse the platform marketplace for approved apps (`GET /v1/platform/marketplace`)
+- You want to check platform app statistics (`GET /v1/platform/apps/{id}/stats`)
+- You want to rotate a webhook's HMAC signing secret (`POST /v1/webhooks/{id}/rotate-secret`)
 
 ---
 
@@ -1034,7 +1038,11 @@ Base URL: `https://api.1claw.xyz`. All authenticated endpoints require `Authoriz
 | `GET`    | `/v1/oauth/authorize`      | Get OAuth consent info (app_name, scopes, already_consented)     |
 | `POST`   | `/v1/oauth/authorize`      | Approve/deny OAuth authorization (issues authorization code)     |
 | `POST`   | `/v1/oauth/token`          | Exchange authorization code for access_token + id_token (public) |
-| `GET`    | `/v1/oauth/userinfo`       | Get user info (sub, email, name, wallet_address)                 |
+| `GET`    | `/v1/oauth/userinfo`       | Get user info (sub, email, name, wallet_address; scope-filtered) |
+| `POST`   | `/v1/oauth/revoke`         | Revoke access_token or refresh_token (RFC 7009, public)          |
+| `DELETE`  | `/v1/oauth/consent/{app_slug}` | Revoke all consent and tokens for an app (user-only)         |
+
+**OAuth2 refresh tokens:** Request `offline_access` scope during authorization to receive a `refresh_token` alongside `access_token` + `id_token`. Exchange refresh tokens via `POST /v1/oauth/token` with `grant_type=refresh_token`. Each exchange returns a new access/refresh token pair (rotation). Revoke any token via `POST /v1/oauth/revoke` with `{ token, token_type_hint? }`. UserInfo (`GET /v1/oauth/userinfo`) filters returned fields by scopes granted during authorization — `email` scope for email, `profile` scope for name.
 
 ### OAuth Connected Accounts
 
@@ -1267,6 +1275,15 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `GET`    | `/v1/platform/apps/{id}/spend-policies`          | List active spend policies for the app                 |
 | `PUT`    | `/v1/platform/connections/{id}/spend-policy`     | Set per-user spend policy override                     |
 | `DELETE` | `/v1/platform/apps/{id}/spend-policies/{pid}`    | Deactivate a spend policy                              |
+| `GET`    | `/v1/platform/marketplace`                       | List approved platform apps (public, with category/tags/screenshots) |
+| `GET`    | `/v1/platform/apps/{id}/stats`                   | Get app stats (connected users, bootstraps, active connections) |
+| `POST`   | `/v1/webhooks/{id}/rotate-secret`                | Rotate webhook HMAC signing secret                     |
+
+**Platform configuration fields:** `max_connected_users` (INTEGER) on `platform_apps` — enforced; new connections rejected when limit reached. `max_requests_per_minute` — per-app rate limits on platform API endpoints.
+
+**Platform delegation scopes (for `delegation_scopes` on connections):** `vaults:read`, `vaults:write`, `agents:read`, `agents:write`, `secrets:read`, `secrets:write`, `automations:*`, `runtimes:*`, `memory:read`, `memory:write`, `chat:read`, `chat:write`.
+
+**Platform webhook events:** `platform.user.connected`, `platform.user.disconnected`, `platform.bootstrap.completed`, `platform.grant.created`, `platform.grant.revoked`, `platform.claim.redeemed`.
 
 ### Agent Chat (v0.43+)
 
@@ -1302,6 +1319,10 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `GET`              | `/v1/webhooks/{id}`            | Get webhook details                                |
 | `PATCH`            | `/v1/webhooks/{id}`            | Update webhook (URL, events, active status)        |
 | `DELETE`           | `/v1/webhooks/{id}`            | Delete webhook registration                        |
+| `POST`             | `/v1/webhooks/{id}/rotate-secret` | Rotate webhook HMAC signing secret              |
+
+**Supported webhook events:** `wallet.transfer.sent`, `wallet.transfer.received`, `proposal.created`, `proposal.signed`, `proposal.executed`, `proposal.cancelled`, `agent.transaction.broadcast`, `agent.transaction.signed`, `signing_key.rotated`, `policy.created`, `policy.updated`, `policy.deleted`, `platform.user.connected`, `platform.user.disconnected`, `platform.bootstrap.completed`, `platform.grant.created`, `platform.grant.revoked`, `platform.claim.redeemed`.
+
 | `GET`              | `/v1/health`                   | Health check → `{ status, service, version }`      |
 | `GET`              | `/v1/health/hsm`               | HSM health → `{ status, hsm_provider, connected }` |
 | `POST/GET/DELETE`  | `/v1/auth/api-keys[/{id}]`     | Manage personal API keys                           |
@@ -1371,6 +1392,11 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `auth`    | `verifyEmailOtp({ email, code, platform_app_id?, auto_provision_chains? })`                                   | Verify OTP → JWT + wallet_address      |
 | `auth`    | `socialLogin({ provider, id_token, ... })`                                                                    | Social login (Google/Apple/Discord)    |
 | `auth`    | `exchangeOAuthCode({ code, redirect_uri, code_verifier? })`                                                  | Exchange OAuth authorization code      |
+| `auth`    | `generatePKCE()`                                                                                             | Generate PKCE code_verifier + code_challenge (S256) |
+| `auth`    | `buildAuthorizeUrl({ app_slug, redirect_uri, scopes?, state?, code_challenge? })`                            | Build OAuth2 authorize URL with params |
+| `auth`    | `getUserInfo(accessToken)`                                                                                   | Get user info from OAuth access token  |
+| `auth`    | `revokeToken({ token, token_type_hint? })`                                                                   | Revoke an OAuth access/refresh token (RFC 7009) |
+| `auth`    | `revokeConsent(appSlug)`                                                                                     | Revoke all consent + tokens for an app |
 | `apiKeys` | `create({ name, scopes?, expires_at? })`                                                                     | Create personal API key                |
 | `apiKeys` | `list()`                                                                                                     | List API keys                          |
 | `apiKeys` | `revoke(keyId)`                                                                                              | Revoke key                             |
@@ -1417,6 +1443,9 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `platform`| `listSpendPolicies(appId)`                                                                                   | List active spend policies             |
 | `platform`| `setUserSpendPolicy(connectionId, { ... })`                                                                  | Set per-user spend policy override     |
 | `platform`| `deleteSpendPolicy(appId, policyId)`                                                                         | Deactivate a spend policy              |
+| `platform`| `rotateWebhookSecret(webhookId)`                                                                             | Rotate webhook HMAC signing secret     |
+| `platform`| `getAppStats(appId)`                                                                                         | Get app stats (users, bootstraps, active connections) |
+| `platform`| `marketplace()`                                                                                              | List approved marketplace apps (public) |
 | `oauthConnect` | `listProviders()`                                                                                     | List available OAuth providers (public) |
 | `oauthConnect` | `listConnections(agentId)`                                                                            | List agent's OAuth connections         |
 | `oauthConnect` | `connect(agentId, { provider_slug, scopes?, redirect_after? })`                                       | Initiate OAuth flow (human-only)       |
