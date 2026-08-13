@@ -1361,6 +1361,57 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 
 **Hermes-native channel features (v0.45):** Channels support `slash_commands_enabled` (12 built-in commands), `voice_transcription_enabled` (Telegram voice→text via Whisper), `unified_conversation_id` (cross-platform continuity), `auto_respond_in_progress` (concurrency guard), and `is_home_platform` (primary interface marker set via /sethome). The `notify` automation step supports `channel` type for delivering outputs to messaging channels.
 
+### Policy Engine v2 — Cedar & OPA (v0.47)
+
+| Method   | Path                               | Description                                    |
+| -------- | ---------------------------------- | ---------------------------------------------- |
+| `POST`   | `/v1/org/cedar-policies`           | Create Cedar policy (Team+)                    |
+| `GET`    | `/v1/org/cedar-policies`           | List Cedar policies                            |
+| `GET`    | `/v1/org/cedar-policies/{id}`      | Get Cedar policy                               |
+| `DELETE` | `/v1/org/cedar-policies/{id}`      | Delete Cedar policy                            |
+| `POST`   | `/v1/org/cedar-policies/test`      | Dry-run Cedar policy evaluation                |
+| `POST`   | `/v1/org/opa-policies`             | Create OPA policy (Business+)                  |
+| `GET`    | `/v1/org/opa-policies`             | List OPA policies                              |
+| `GET`    | `/v1/org/opa-policies/{id}`        | Get OPA policy                                 |
+| `DELETE` | `/v1/org/opa-policies/{id}`        | Delete OPA policy                              |
+| `POST`   | `/v1/org/opa-policies/test`        | Dry-run OPA policy evaluation                  |
+
+Built-in glob policies have new fields: `effect` (allow/deny, default allow), `priority` (higher wins), `attribute_conditions` (JSONB).
+
+### Sub-Organizations (v0.47)
+
+| Method   | Path                                               | Description                                    |
+| -------- | -------------------------------------------------- | ---------------------------------------------- |
+| `POST`   | `/v1/org/sub-orgs`                                 | Create sub-organization                        |
+| `GET`    | `/v1/org/sub-orgs`                                 | List sub-organizations                         |
+| `GET`    | `/v1/org/sub-orgs/{id}`                            | Get sub-organization                           |
+| `DELETE` | `/v1/org/sub-orgs/{id}`                            | Archive sub-organization                       |
+| `POST`   | `/v1/org/sub-orgs/{id}/permissions`                | Grant permission in sub-org                    |
+| `DELETE` | `/v1/org/sub-orgs/{id}/permissions/{permission}`   | Revoke permission                              |
+| `POST`   | `/v1/org/sub-orgs/{id}/users`                      | Add user to sub-org                            |
+| `POST`   | `/v1/org/sub-orgs/{id}/wallets/generate`           | Generate treasury wallets for sub-org          |
+
+Tier limits: Free=0, Pro=10, Team=50, Business=500, Enterprise=unlimited.
+
+### Portfolio (v0.47)
+
+| Method | Path            | Description                                                               |
+| ------ | --------------- | ------------------------------------------------------------------------- |
+| `GET`  | `/v1/portfolio` | Unified balance across treasury wallets, signing keys, smart accounts. Query: `?chains=`, `?include_tokens=` |
+
+### Smart Account Import (v0.47)
+
+| Method | Path                                           | Description                                    |
+| ------ | ---------------------------------------------- | ---------------------------------------------- |
+| `POST` | `/v1/agents/{id}/smart-accounts/import`        | Import existing Gnosis Safe (optional on-chain verify) |
+
+### Key Import — BYOK (v0.47)
+
+| Method | Path                                                      | Description                                                |
+| ------ | --------------------------------------------------------- | ---------------------------------------------------------- |
+| `POST` | `/v1/agents/{id}/signing-keys/{chain}/import`             | Import signing key (human-only, `X-Auth-Confirm`)          |
+| `POST` | `/v1/treasury/wallets/{chain}/import`                     | Import treasury wallet key (human-only, `X-Auth-Confirm`)  |
+
 ### Other
 
 | Method             | Path                           | Description                                        |
@@ -1507,6 +1558,11 @@ All methods return `Promise<OneclawResponse<T>>`. Access via `client.<resource>.
 | `org`     | `listMembers()`                                                                                              | List org members                       |
 | `org`     | `updateMemberRole(userId, role)`                                                                             | Update member role                     |
 | `org`     | `removeMember(userId)`                                                                                       | Remove member                          |
+| `cedarPolicies` | `create({ policy_text, description? })`, `list()`, `get(id)`, `delete(id)`, `test({ ... })`           | Cedar policy CRUD + dry-run (Team+)    |
+| `opaPolicies` | `create({ rego, description? })`, `list()`, `get(id)`, `delete(id)`, `test({ ... })`                    | OPA policy CRUD + dry-run (Business+)  |
+| `subOrgs` | `create({ name, description? })`, `list()`, `get(id)`, `delete(id)`                                          | Sub-organization management            |
+| `portfolio` | `get({ chains?, include_tokens? })`                                                                         | Unified balance aggregator             |
+| `agents`  | `importSmartAccount(agentId, { chain, chain_id, safe_address, verify? })`                                    | Import existing Gnosis Safe            |
 
 ### OpenAPI spec for custom SDKs
 
