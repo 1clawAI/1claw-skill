@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.15.0
+version: 1.16.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -1367,7 +1367,7 @@ Wallet quota (treasury wallets + signing keys + smart accounts + agent EOAs): Fr
 
 `GET /v1/billing/subscription` `usage` includes `requests`, `wallets`, and `intent_transactions` (`{ used, limit }`).
 
-### Policy Engine v2 — Cedar & OPA (v0.47)
+### Policy Engine v2 — Cedar & OPA (v0.47+)
 
 | Method   | Path                               | Description                                    |
 | -------- | ---------------------------------- | ---------------------------------------------- |
@@ -1383,6 +1383,28 @@ Wallet quota (treasury wallets + signing keys + smart accounts + agent EOAs): Fr
 | `POST`   | `/v1/org/opa-policies/test`        | Dry-run OPA policy evaluation                  |
 
 Built-in glob policies have new fields: `effect` (allow/deny, default allow), `priority` (higher wins), `attribute_conditions` (JSONB).
+
+**Cedar/OPA enforcement v2 (v0.48):** Org-level backend config with shadow mode (default), enforce mode, and fail-closed circuit breaker. Cedar/OPA policy responses include dynamic `enforcement_status` (`shadow` | `enforce` | `inactive`).
+
+| Method   | Path                               | Description                                    |
+| -------- | ---------------------------------- | ---------------------------------------------- |
+| `GET`    | `/v1/org/settings/policy-backend`  | Get backend, mode, scope, breaker behavior     |
+| `PATCH`  | `/v1/org/settings/policy-backend`  | Update policy backend settings                 |
+| `GET`    | `/v1/org/policy-shadow-report`     | Shadow mode divergence report                  |
+| `POST`   | `/v1/org/contract-abis`            | Register contract ABI (chain + address)        |
+| `GET`    | `/v1/org/contract-abis`            | List contract ABIs                             |
+| `GET`    | `/v1/org/contract-abis/{id}`       | Get contract ABI                               |
+| `DELETE` | `/v1/org/contract-abis/{id}`       | Delete contract ABI                            |
+| `POST`   | `/v1/pending-approvals`            | Submit action for consensus approval           |
+| `GET`    | `/v1/pending-approvals`            | List pending approvals                         |
+| `GET`    | `/v1/pending-approvals/{id}`       | Get pending approval                           |
+| `POST`   | `/v1/pending-approvals/{id}/approve` | Approve (collect signatures)                 |
+| `POST`   | `/v1/pending-approvals/{id}/execute` | Execute approved action                      |
+| `POST`   | `/v1/pending-approvals/{id}/cancel`  | Cancel pending approval                      |
+
+Access policies support `consensus_trigger` — when matched, signing returns **202** pending multi-party approval instead of signing immediately.
+
+**MCP tools (v0.48):** `get_policy_backend_settings`, `update_policy_backend_settings`, `get_shadow_report`, `list_contract_abis`, `create_contract_abi`, `delete_contract_abi`, `list_pending_approvals`, `submit_pending_approval`.
 
 ### Sub-Organizations (v0.47)
 
