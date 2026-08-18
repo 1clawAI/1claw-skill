@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.16.0
+version: 1.17.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -1404,7 +1404,9 @@ Built-in glob policies have new fields: `effect` (allow/deny, default allow), `p
 
 Access policies support `consensus_trigger` — when matched, signing returns **202** pending multi-party approval instead of signing immediately.
 
-**MCP tools (v0.48):** `get_policy_backend_settings`, `update_policy_backend_settings`, `get_shadow_report`, `list_contract_abis`, `create_contract_abi`, `delete_contract_abi`, `list_pending_approvals`, `submit_pending_approval`.
+**v0.50 Policy Parity:** Consensus supports `threshold_wei` (wei-precision), `required_roles`, `per_role_minimums`, `require_credential_types` on approvals, and `action_in` for control-plane governance. `tx_conditions` adds EIP-712 per-field (`eip712_verifying_contract_in`, etc.) and EIP-7702 (`eip7702_authorized_addresses_in`) conditions. Org setting `control_plane_consensus_policy_id` gates policy/key/member mutations.
+
+**MCP tools (v0.50):** `get_policy_backend_settings`, `update_policy_backend_settings`, `get_shadow_report`, `list_contract_abis`, `create_contract_abi`, `delete_contract_abi`, `list_pending_approvals`, `approve_pending_approval` (supports `credential_type`), `execute_pending_approval`.
 
 ### Sub-Organizations (v0.47)
 
