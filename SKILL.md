@@ -145,6 +145,10 @@ metadata:
 - You want to browse the platform marketplace for approved apps (`GET /v1/platform/marketplace`)
 - You want to check platform app statistics (`GET /v1/platform/apps/{id}/stats`)
 - You want to rotate a webhook's HMAC signing secret (`POST /v1/webhooks/{id}/rotate-secret`)
+- You want to submit a pre-built Solana/Bitcoin/Tron transaction for deep policy decode and signing (`raw_transaction` base64 field on sign/submit, `tron_transaction` JSON for Tron)
+- You want to manage wallet access policies per-chain (`POST/GET/DELETE /v1/wallets/access-policies`)
+- You want to initiate or execute credential recovery with a delay window (`POST /v1/auth/credential-recovery/requests/{id}/execute` — requires admin/owner role, 72h default delay)
+- You want to reconstruct a Shamir KEK via TEE (`POST /v1/admin/shamir/reconstruct` — forwarded to Shroud; Business+ tier)
 
 ---
 
