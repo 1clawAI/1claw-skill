@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.17.0
+version: 1.18.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -282,6 +282,7 @@ All three key types support optional expiration via `api_key_expires_at`. Expire
 ### Shroud & Intents hosts
 
 - **Shroud** (`shroud.1claw.xyz`): TEE LLM proxy + transaction signing; full Intents API surface. Supported providers: OpenAI, Anthropic, Google (Gemini), Mistral, Cohere, OpenRouter, Darkbloom (E2E encrypted Apple Silicon TEE), Venice AI (zero-retention + TEE/E2EE), Bankr LLM Gateway (`X-Shroud-Provider: bankr`), Stripe AI Gateway.
+- **TEE attestation:** `GET https://shroud.1claw.xyz/v1/shroud/attestation` (public) returns `attestation_level` (`none` | `identity` | `confidential` | `sev_snp`), `confidential_claims`, GCE identity JWT, and image hash for SEV-SNP verification before contract signing.
 - **Intents** (`intents.1claw.xyz`): Additional ingress for signing/health checks; production smoke tests hit `/healthz`.
 
 ---
