@@ -144,7 +144,10 @@ metadata:
 - You want graduated transaction HITL (v0.54–0.55): set `tx_approval_policy` JSON so matching txs return **202** `awaiting_approval`; humans approve via `/v1/approvals/{id}/decide`
 - You want EIP-712, simulation failure, or raw digest signing routed to HITL (`typed_data_policy`, `simulation_failure_policy`, `raw_signing_policy` — `deny` or `approve`)
 - You want extended v0.55 guardrails: unlimited ERC-20 approval blocking, per-recipient limits, USD caps, `allow_erc4337`, `allow_eip7702`, in-flight daily budget holds
-- You want org-wide emergency freeze during incident response (`POST /v1/org/freeze` / `POST /v1/org/unfreeze` — owner/admin)
+- You want v0.56 guardrail governance: Convention 6 execution shadow mode (`enforcement: log|enforce` on bindings/agents), shadow report (`GET /v1/org/guardrail-shadow-report`), revision history (`GET /v1/org/guardrail-revisions`), dry-run replay (`POST /v1/agents/{id}/guardrails/replay`)
+- You want recipient address screening on agents (`address_screening_policy`: `mode` off | deny | approve; env deny list `ONECLAW_SCREENING_DENY_LIST`)
+- You want wallet Human Factor Auth (HFA) on treasury send/swap/export (`GET/PUT /v1/auth/human-factor-auth`; optional `human_factor_auth` on spend policies)
+- You want org-wide emergency freeze during incident response (`POST /v1/org/freeze` / `POST /v1/org/unfreeze` — owner/admin; unfreeze requires T3 step-up)
 - You want to enforce that agents only resolve env vars for their tagged environment (org setting `env.enforce_agent_environment_scope`)
 - You want to browse the platform marketplace for approved apps (`GET /v1/platform/marketplace`)
 - You want to check platform app statistics (`GET /v1/platform/apps/{id}/stats`)
