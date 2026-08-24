@@ -71,7 +71,7 @@ metadata:
 - You need to sign or simulate an EVM transaction without exposing private keys
 - You need to sign an EIP-191 personal message or EIP-712 typed data
 - You want to provision multi-chain signing keys (Ethereum, Bitcoin, Solana, XRP, Cardano, Tron)
-- You want to sign arbitrary XRPL transaction types (TrustSet, OfferCreate, NFTokenMint, AMMCreate, EscrowCreate, etc.) via `xrpl_tx_json`
+- You want to sign any of 1Claw's 31 supported XRPL types via `xrpl_tx_json` (SetRegularKey, SignerListSet, AccountSet, AccountDelete need explicit `xrpl_allowed_tx_types`)
 - You want TEE-grade key isolation for transaction signing (use Shroud at `shroud.1claw.xyz`)
 - Your vault uses **MPC secret storage** — DEKs split across GCP/AWS/Azure HSMs (Shamir 2-of-3) or XOR 2-of-2 client custody; provide `X-Client-Share` header when reading from client-custody vaults
 - Your org uses **LLM token billing** (Stripe AI Gateway): enable in the dashboard; agent JWTs include `llm_token_billing` / `stripe_customer_id` for Shroud routing
@@ -465,13 +465,13 @@ Submit a transaction for signing and optional broadcast. Requires `intents_api_e
 | `simulate_first`           | boolean | no       | true                  | Run Tenderly simulation before signing (EVM-only; no-op on non-EVM) |
 | `gasless`                  | boolean | no       | false                 | Sponsor gas via Pimlico paymaster (ERC-4337) |
 | `destination_tag`          | number  | no       |                       | **XRP** destination tag                   |
-| `memo`                     | string  | no       |                       | **XRP / Solana** memo                     |
+| `memo`                     | string  | no       |                       | **Solana** Memo Program v2. XRP: accepted but not applied — use `Memos` inside `xrpl_tx_json` |
 | `fee_rate_sat_per_vbyte`   | number  | no       | fetched               | **Bitcoin** fee rate override             |
 | `fee_limit_sun`            | number  | no       |                       | **Tron** TRC-20 energy fee limit          |
 | `token_mint`               | string  | no       |                       | **Solana (SPL) / Tron (TRC-20)** token mint/contract; omit for native transfer |
 | `token_decimals`           | number  | no       | 6                     | **Solana / Tron** token decimals          |
 | `ttl`                      | number  | no       |                       | **Cardano** time-to-live (absolute slot)  |
-| `xrpl_tx_json`             | object  | no       |                       | **XRP** raw XRPL transaction JSON for full tx type coverage (TrustSet, OfferCreate, NFTokenMint, AMMCreate, EscrowCreate, etc.). Account/Sequence/Fee/SigningPubKey are auto-filled. |
+| `xrpl_tx_json`             | object  | no       |                       | **XRP** raw JSON for one of 1Claw's 31 supported types. `to`/`value` still required (use `"0"` for non-Payment). Auto-fills Account, Sequence, Fee, LastLedgerSequence, SigningPubKey, Flags, SourceTag. |
 
 Non-EVM responses use `raw_tx` for the signed payload and a chain-native `tx_hash` (reversed-hex txid for Bitcoin, base58 signature for Solana, uppercase hex for XRP, blake2b-256 hex for Cardano, SHA-256 txID hex for Tron).
 
@@ -482,7 +482,7 @@ Sign a transaction without broadcasting (EVM or non-EVM). Returns `signed_tx`/`r
 | Parameter                  | Type    | Required | Default               | Description                               |
 | -------------------------- | ------- | -------- | --------------------- | ----------------------------------------- |
 | `to`                       | string  | yes      |                       | Destination address                       |
-| `value`                    | string  | yes      |                       | Value in ETH                              |
+| `value`                    | string  | yes      |                       | Value in the chain's major unit as a decimal string |
 | `chain`                    | string  | yes      |                       | Chain name or chain ID                    |
 | `data`                     | string  | no       |                       | Hex-encoded calldata                      |
 | `signing_key_path`         | string  | no       | auto-resolved         | Vault path to signing key (auto-resolves per-chain key) |
@@ -1802,7 +1802,7 @@ Default signing key path auto-resolves: if the agent has a per-chain signing key
 
 #### Multi-chain signing keys (v0.18)
 
-Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), Bitcoin (secp256k1), Solana (Ed25519), XRP (Ed25519, **30+ transaction types** via `xrpl_tx_json`), Cardano (Ed25519), Tron (secp256k1). All six chains support **on-chain transaction signing + broadcast** through the Intents API (`submit_transaction` / `sign_transaction`) — 1claw dispatches by chain family, auto-fetches chain data (Bitcoin UTXOs/fee, Solana blockhash, XRP sequence, Cardano protocol params, Tron ref block), signs in the HSM/TEE, and broadcasts. `value` is the major-unit decimal string. **XRP**: Pass `xrpl_tx_json` with any supported XRPL `TransactionType` (Payment, TrustSet, OfferCreate, OfferCancel, AccountSet, AccountDelete, EscrowCreate, EscrowFinish, EscrowCancel, PaymentChannelCreate/Fund/Claim, NFTokenMint/Burn/CreateOffer/AcceptOffer/CancelOffer, AMMCreate/Deposit/Withdraw/Bid/Delete/Vote, SetRegularKey, SignerListSet, DepositPreauth, CheckCreate/Cash/Cancel, TicketCreate, Clawback); Account/Sequence/Fee/LastLedgerSequence/SigningPubKey are auto-filled. Private keys stored in `__agent-keys` vault at `agents/{id}/chains/{chain}/private_key`. Provisioned by humans only. Use `provision_signing_key` MCP tool or `client.signingKeys.create()`. **Export**: `POST /v1/agents/{id}/signing-keys/{chain}/export` — human-only, requires `X-Auth-Confirm` password header; returns `{ private_key, public_key, address, curve, chain }`; audit-logged; failed re-auth triggers account lockout.
+Agents can have per-chain signing keys for 6 blockchains: Ethereum (secp256k1), Bitcoin (secp256k1), Solana (Ed25519), XRP (Ed25519, **31 supported types** via `xrpl_tx_json` — a 1Claw subset, not the full XRPL catalog), Cardano (Ed25519), Tron (secp256k1). All six chains support **on-chain transaction signing + broadcast** through the Intents API (`submit_transaction` / `sign_transaction`) — 1claw dispatches by chain family, auto-fetches chain data (Bitcoin UTXOs/fee, Solana blockhash, XRP sequence, Cardano protocol params, Tron ref block), signs in the HSM/TEE, and broadcasts. `value` is the major-unit decimal string. **XRP**: `to` and `value` remain required on submit/sign even with `xrpl_tx_json` (use `"0"` for non-Payment types). Pass `xrpl_tx_json` with one of 1Claw's 31 supported types (Payment, TrustSet, OfferCreate, OfferCancel, EscrowCreate/Finish/Cancel, PaymentChannelCreate/Fund/Claim, NFTokenMint/Burn/CreateOffer/AcceptOffer/CancelOffer, AMMCreate/Deposit/Withdraw/Bid/Delete/Vote, DepositPreauth, CheckCreate/Cash/Cancel, TicketCreate, Clawback; plus SetRegularKey, SignerListSet, AccountSet, AccountDelete which are **blocked unless** explicitly listed in `xrpl_allowed_tx_types`). Auto-fills Account, Sequence, Fee (`"12"` drops), LastLedgerSequence (ledger + 20), SigningPubKey, Flags (`0x80000000`), and SourceTag `482684816` (caller-supplied wins). Top-level `memo` is not applied on XRP — put `Memos` inside `xrpl_tx_json`. Private keys stored in `__agent-keys` vault at `agents/{id}/chains/{chain}/private_key`. Provisioned by humans only. Use `provision_signing_key` MCP tool or `client.signingKeys.create()`. **Export**: `POST /v1/agents/{id}/signing-keys/{chain}/export` — human-only, requires `X-Auth-Confirm` password header; returns `{ private_key, public_key, address, curve, chain }`; audit-logged; failed re-auth triggers account lockout.
 
 #### Extended signing intents (v0.18)
 
@@ -1839,6 +1839,7 @@ Human-configured, server-enforced limits on what the Intents API allows:
 | Daily tx count       | `tx_max_per_day`     | Max transactions per UTC calendar day. NULL = unlimited |
 | Overhead budget      | `tx_overhead_budget` | Per-chain daily budget for non-value costs (rent, fees, energy) in native units |
 | ATA allowlist        | `solana_ata_allowlist` | Only listed Solana addresses may have ATAs created. Empty = unrestricted |
+| XRPL tx types        | `xrpl_allowed_tx_types` | Restrict XRPL `TransactionType`. Empty = all supported *except* SetRegularKey, SignerListSet, AccountSet, AccountDelete (those need explicit listing) |
 
 Per-chain overrides via `per_chain_guardrails` also support `max_per_day`, `overhead_budget`, and `max_ata_creates_per_day`.
 
