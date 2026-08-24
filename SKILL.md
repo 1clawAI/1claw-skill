@@ -719,6 +719,48 @@ Bootstrap a connected platform user — provisions vaults, agents, policies, and
 | `connection_id` | string | yes      | Connection ID from upsert_user or list_users              |
 | `template_id`   | string | no       | Template ID to provision from (uses app default if omitted) |
 | `return_to`     | string | no       | URL to redirect the user to after claiming                |
+| `parameters`    | object | no       | Template variable map for bootstrap (v0.57+)              |
+
+### platform_siwe_challenge
+
+Get a Sign-In with Ethereum (SIWE) message + nonce for wallet-based user provisioning. Requires `plt_` platform key. Set `siwe_domain` on the platform app first.
+
+| Parameter | Type   | Required | Description                    |
+| --------- | ------ | -------- | ------------------------------ |
+| `address` | string | yes      | EVM wallet address (0x…)       |
+
+### platform_get_connection
+
+Fetch connection detail (status, resource IDs, metadata). Requires `plt_` key.
+
+| Parameter       | Type   | Required | Description   |
+| --------------- | ------ | -------- | ------------- |
+| `connection_id` | string | yes      | Connection UUID |
+
+### platform_connection_usage
+
+Usage attribution for a connected user (API calls, inference spend). Requires `plt_` key.
+
+| Parameter       | Type   | Required | Description   |
+| --------------- | ------ | -------- | ------------- |
+| `connection_id` | string | yes      | Connection UUID |
+
+### platform_list_entitlements
+
+List on-chain entitlement watches for a connection. Requires `plt_` key.
+
+| Parameter       | Type   | Required | Description   |
+| --------------- | ------ | -------- | ------------- |
+| `connection_id` | string | yes      | Connection UUID |
+
+### platform_preview_template
+
+Dry-run a bootstrap template with parameters (no resources created). Requires `plt_` key.
+
+| Parameter    | Type   | Required | Description                          |
+| ------------ | ------ | -------- | ------------------------------------ |
+| `template_id`| string | yes      | Template UUID                        |
+| `parameters` | object | no       | Template variable map                |
 
 ### order_card
 
