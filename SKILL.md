@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.19.0
+version: 1.20.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -147,9 +147,12 @@ metadata:
 - You want v0.56 guardrail governance: Convention 6 execution shadow mode (`enforcement: log|enforce` on bindings/agents), shadow report (`GET /v1/org/guardrail-shadow-report`), revision history (`GET /v1/org/guardrail-revisions`), dry-run replay (`POST /v1/agents/{id}/guardrails/replay`)
 - You want recipient address screening on agents (`address_screening_policy`: `mode` off | deny | approve; env deny list `ONECLAW_SCREENING_DENY_LIST`)
 - You want wallet Human Factor Auth (HFA) on treasury send/swap/export (`GET/PUT /v1/auth/human-factor-auth`; optional `human_factor_auth` on spend policies; v0.56.2 passkey-only send/swap in dashboard and wallet-react)
-- You want to migrate an agent EOA to a counterfactual Safe (`POST /v1/agents/{id}/accounts/migrate`; dashboard wizard at `/agents/[agentId]/migrate-safe`)
-- You want to list agent EOA/Safe accounts per chain (`GET /v1/agents/{id}/accounts`) or deprecate an EOA signing path (`POST .../accounts/{chain}/deprecate-eoa`)
-- You want pinned Safe module addresses for a chain (`GET /v1/safe/module-registry/{chain}`) or org-wide allowance reconciliation (`POST /v1/org/safe/sync-allowances`)
+- You want guardrail widening approval when relaxing binding or agent guardrails (PATCH returns **202** `pending_approval_id` until human approves `policy_change`)
+- You want cumulative EVM gas caps per chain (`gas_daily_budget_native` in `per_chain_guardrails`; UTC-day sum via `agent_gas_ledger`)
+- You want outbound HTTP/GraphQL idempotency on execute (`inject_idempotency_key: true` on binding guardrails — Vault injects deterministic `Idempotency-Key`)
+- You want to migrate an agent EOA to a counterfactual Safe (`POST /v1/agents/{id}/accounts/migrate`; MCP `migrate_agent_to_safe`; dashboard wizard at `/agents/[agentId]/migrate-safe`)
+- You want to list agent EOA/Safe accounts per chain (`GET /v1/agents/{id}/accounts`; MCP `list_agent_accounts`) or deprecate an EOA signing path (`POST .../accounts/{chain}/deprecate-eoa`; MCP `deprecate_agent_eoa`)
+- You want pinned Safe module addresses for a chain (`GET /v1/safe/module-registry/{chain}`; MCP `get_safe_module_registry`) or org-wide allowance reconciliation (`POST /v1/org/safe/sync-allowances`; MCP `sync_org_safe_allowances`)
 - You want org-wide emergency freeze during incident response (`POST /v1/org/freeze` / `POST /v1/org/unfreeze` — owner/admin; unfreeze requires T3 step-up)
 - You want to enforce that agents only resolve env vars for their tagged environment (org setting `env.enforce_agent_environment_scope`)
 - You want to browse the platform marketplace for approved apps (`GET /v1/platform/marketplace`)
