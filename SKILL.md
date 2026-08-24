@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.20.0
+version: 1.21.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -84,6 +84,8 @@ metadata:
 - You want to approve or reject pending agent actions from the mobile app (approval queue with risk tiers)
 - You are working with the 1Claw mobile companion app (Expo, React Native, passkey/biometric auth)
 - You want to sign in with a passkey (WebAuthn, passwordless) or manage passkey credentials
+- You want passkey-based login MFA instead of TOTP after password/social login (`require_passkey_for_mfa` via `GET/PATCH /v1/auth/settings`; complete via `POST /v1/auth/mfa/passkey/begin` + `complete`)
+- You want mobile approval push alerts when `ONECLAW_EXPO_ACCESS_TOKEN` is configured (Expo push on pending approvals/HITL)
 - You want to request a policy change as an agent (approval workflow, human-in-the-loop)
 - You want to register webhooks for wallet, proposal, transaction, policy, or signing key events (live async delivery with retries)
 - You want to check the balance of a treasury wallet or an agent's signing key address
