@@ -969,6 +969,17 @@ Manually trigger an automation run.
 | `automation_id` | string | yes      | UUID of the automation   |
 | `payload`       | object | no       | Optional trigger payload |
 
+### create_agent_automation
+
+Create a simple automation for the calling agent (manual/webhook; log, notify, memory, wait steps only).
+
+| Parameter        | Type    | Required | Description                                      |
+| ---------------- | ------- | -------- | ------------------------------------------------ |
+| `name`           | string  | yes      | Short automation name                            |
+| `trigger_type`   | string  | no       | `manual` (default) or `webhook`                  |
+| `workflow_spec`  | object  | yes      | Steps array or `{ "steps": [...] }`              |
+| `auto_trigger`   | boolean | no       | Run immediately after create (manual only)       |
+
 ### list_runtimes
 
 List cloud runtimes for the org.
