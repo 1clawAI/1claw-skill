@@ -1427,6 +1427,7 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `DELETE` | `/v1/platform/apps/{id}`                         | Delete platform app                                    |
 | `POST`   | `/v1/platform/apps/{id}/templates`               | Create bootstrap template (JSON spec)                  |
 | `GET`    | `/v1/platform/apps/{id}/templates`               | List templates → `{ templates: [...] }`                |
+| `GET`    | `/v1/platform/apps/{id}/templates/{tid}`         | Get template by ID                                     |
 | `PATCH`  | `/v1/platform/apps/{id}/templates/{tid}`         | Update template                                        |
 | `DELETE` | `/v1/platform/apps/{id}/templates/{tid}`         | Delete template                                        |
 | `POST`   | `/v1/platform/users/upsert`                      | Provision/find user (platform-only, OIDC or email)     |
@@ -1444,6 +1445,13 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `POST`   | `/v1/platform/apps/{id}/spend-policies`          | Create app-level wallet spend policy (platform-only)   |
 | `GET`    | `/v1/platform/apps/{id}/spend-policies`          | List active spend policies for the app                 |
 | `PUT`    | `/v1/platform/connections/{id}/spend-policy`     | Set per-user spend policy override                     |
+| `GET`    | `/v1/platform/connections/{id}/approvals`        | List mobile approvals (plt_ auth)                      |
+| `POST`   | `/v1/platform/connections/{id}/approvals/{aid}/decide` | Decide mobile approval (plt_ auth)                 |
+| `GET`    | `/v1/platform/connections/{id}/pending-approvals`  | List consensus pending approvals (plt_ auth)           |
+| `POST`   | `/v1/platform/connections/{id}/pending-approvals/{pid}/decide` | Vote on pending approval (payload_hash) |
+| `POST`   | `/v1/platform/connections/{id}/runtimes`         | Create runtime for connection agent (plt_ auth)        |
+| `POST`   | `/v1/platform/connections/{id}/agents/{aid}/chat`  | Chat with connection agent (plt_ auth)                 |
+| `DELETE` | `/v1/platform/connections/{id}/signing-keys/{chain}` | Deactivate signing key for connection agent        |
 | `DELETE` | `/v1/platform/apps/{id}/spend-policies/{pid}`    | Deactivate a spend policy                              |
 | `GET`    | `/v1/platform/marketplace`                       | List approved platform apps (public, with category/tags/screenshots) |
 | `GET`    | `/v1/platform/apps/{id}/stats`                   | Get app stats (connected users, bootstraps, active connections) |
