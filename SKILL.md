@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.22.0
+version: 1.23.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -725,7 +725,7 @@ Bootstrap a connected platform user — provisions vaults, agents, policies, and
 
 ### platform_siwe_challenge
 
-Get a Sign-In with Ethereum (SIWE) message + nonce for wallet-based user provisioning. Requires `plt_` platform key. Set `siwe_domain` on the platform app first.
+Get a Sign-In with Ethereum (SIWE) message + nonce for wallet-based user provisioning. Requires `plt_` platform key. Set `siwe_domain` on the platform app via `PATCH /v1/platform/apps/{id}` (human JWT for full update; **plt_ keys may only set `siwe_domain`**). Upsert with `subject_token_type: urn:1claw:params:oauth:token-type:siwe`, `siwe_message`, `siwe_signature`. Signatures accept recovery id **0/1** or **27/28** (MetaMask/viem).
 
 | Parameter | Type   | Required | Description                    |
 | --------- | ------ | -------- | ------------------------------ |
