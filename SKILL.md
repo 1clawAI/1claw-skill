@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.23.0
+version: 1.24.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -2204,6 +2204,29 @@ Audit, org, security, chain, billing, and auth endpoints are **free and never co
 - **Idempotency body hash** (EXT-H3): Same `Idempotency-Key` with different body → 409 Conflict.
 - **Redaction entropy floor** (EXT-H4): Secrets < 8 chars or entropy < 3.0 excluded from Shroud automata.
 - **Bootstrap signing keys** (v0.20.3): Template `spec.signing_keys` auto-provisions per-chain keys.
+
+### Onboarding golden path (v0.59.2)
+
+- **`GET /v1/org/onboarding/status`** — welcome bundle progress (human JWT).
+- **`POST /v1/onboarding/provision`** — creates `default` vault, `examples/hello`, MCP agent, `**` policy; returns one-time `ocv_` key + stdio `mcp_stdio_config`.
+- **`1claw setup`** — login + provision + auto-configure Cursor/Claude/VS Code for stdio MCP (`npx @1claw/mcp` + `ONECLAW_AGENT_API_KEY`).
+- **Dashboard** — `/onboarding/connect` wizard after signup.
+- **Canonical stdio MCP config:**
+
+```json
+{
+  "mcpServers": {
+    "1claw": {
+      "command": "npx",
+      "args": ["-y", "@1claw/mcp"],
+      "env": {
+        "ONECLAW_AGENT_API_KEY": "ocv_...",
+        "ONECLAW_BASE_URL": "https://api.1claw.xyz"
+      }
+    }
+  }
+}
+```
 
 ### Local Vault & Daemon (v0.34.2)
 
