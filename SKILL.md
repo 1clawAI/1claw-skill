@@ -1448,7 +1448,13 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `GET`    | `/v1/platform/connections/{id}/approvals`        | List mobile approvals (plt_ auth)                      |
 | `POST`   | `/v1/platform/connections/{id}/approvals/{aid}/decide` | Decide mobile approval (plt_ auth)                 |
 | `GET`    | `/v1/platform/connections/{id}/pending-approvals`  | List consensus pending approvals (plt_ auth)           |
+| `POST`   | `/v1/platform/connections/{id}/pending-approvals`  | Create pending approval for connection agent (plt_; **202**) |
 | `POST`   | `/v1/platform/connections/{id}/pending-approvals/{pid}/decide` | Vote on pending approval (payload_hash) |
+| `GET`    | `/v1/platform/connections/{id}/portfolio`        | Agent portfolio/balances for connection (plt_ auth)    |
+| `GET`    | `/v1/platform/connections/{id}/automations`      | List automations for connection agents (plt_ auth)     |
+| `POST`   | `/v1/platform/connections/{id}/automations`      | Create automation for connection agent (plt_ auth)   |
+| `GET/PUT/DELETE` | `/v1/platform/connections/{id}/memory/{ns}/{key}` | Connection-scoped agent memory (plt_; optional `?agent_id=`) |
+| `POST`   | `/v1/shroud/inspect-content`                     | Standalone content threat scan (plt_ / agent / user JWT) |
 | `POST`   | `/v1/platform/connections/{id}/runtimes`         | Create runtime for connection agent (plt_ auth)        |
 | `GET`    | `/v1/platform/connections/{id}/runtimes/{rid}`   | Get connection-scoped runtime (plt_ auth; not `/v1/runtimes/{id}`) |
 | `POST`   | `/v1/platform/connections/{id}/passkeys/enroll/begin`   | Start WebAuthn registration for connected end-user (plt_ auth) |
@@ -1463,13 +1469,13 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `GET`    | `/v1/platform/apps/{id}/stats`                   | Get app stats (connected users, bootstraps, active connections) |
 | `POST`   | `/v1/webhooks/{id}/rotate-secret`                | Rotate webhook HMAC signing secret                     |
 
-**Platform expansion (v0.57–v0.59):** `GET /v1/platform/connections/{id}` returns `provisioned_tier` (effective billing tier when `billing_model` is `platform_pays` — set from template `plan` at bootstrap) and `wallet_address` (SIWE **staker identity** — not the agent signing key). Use **`GET .../signing-keys`** for agent on-chain addresses. Template spec supports `agents[].system_prompt`, `intents: true` / `intents_api_enabled`, and `agents[].runtime` / top-level `runtimes[]` / `provision_runtime: true`. **`PATCH .../agents/{aid}`** enables Intents on existing agents without re-bootstrap. Connection chat accepts `system`, `system_prompt`, or inline `messages` with `role: "system"`. SDK: `platform.getConnection()`, `listConnectionSigningKeys()`, `getConnectionSigningKey()`, `patchConnectionAgent()`, `getConnectionRuntime()`, `connectionPasskeyEnrollBegin()`, `connectionPasskeyEnrollComplete()`, `connectionAgentChat()`.
+**Platform expansion (v0.57–v0.59.4):** `GET /v1/platform/connections/{id}` returns `provisioned_tier` (effective billing tier when `billing_model` is `platform_pays` — set from template `plan` at bootstrap) and `wallet_address` (SIWE **staker identity** — not the agent signing key). Use **`GET .../signing-keys`** for agent on-chain addresses. Template spec supports `agents[].system_prompt`, `intents: true` / `intents_api_enabled`, and `agents[].runtime` / top-level `runtimes[]` / `provision_runtime: true`. **`PATCH .../agents/{aid}`** enables Intents on existing agents without re-bootstrap. **`POST .../pending-approvals`** creates consensus approvals; **`GET .../portfolio`** returns balances; **`GET/POST .../automations`** and **`GET/PUT/DELETE .../memory/{ns}/{key}`** are plt_-scoped. **`POST /v1/shroud/inspect-content`** mirrors MCP `inspect_content`. Connection chat accepts `system`, `system_prompt`, or inline `messages` with `role: "system"`. **`siwe_domain`** on platform apps (plt_ may PATCH only this field). Spend-policy PUT and bootstrap accept **`Idempotency-Key`** (24h body-hash replay). Platform webhooks add `pending_approval.created`, `tx.awaiting_approval`, `sign.awaiting_approval`, `automation.run.failed`. SDK: `platform.getConnection()`, `listConnectionSigningKeys()`, `patchConnectionAgent()`, `createConnectionPendingApproval()`, `getConnectionPortfolio()`, `listConnectionAutomations()`, `putConnectionMemory()`, `getConnectionRuntime()`, `connectionPasskeyEnrollBegin()`, `connectionPasskeyEnrollComplete()`, `connectionAgentChat()`.
 
 **Platform configuration fields:** `max_connected_users` (INTEGER) on `platform_apps` — enforced; new connections rejected when limit reached. `max_requests_per_minute` — per-app rate limits on platform API endpoints.
 
 **Platform delegation scopes (for `delegation_scopes` on connections):** `vaults:read`, `vaults:write`, `agents:read`, `agents:write`, `secrets:read`, `secrets:write`, `automations:*`, `runtimes:*`, `memory:read`, `memory:write`, `chat:read`, `chat:write`.
 
-**Platform webhook events:** `platform.user.connected`, `platform.user.disconnected`, `platform.bootstrap.completed`, `platform.grant.created`, `platform.grant.revoked`, `platform.claim.redeemed`.
+**Platform webhook events:** `platform.user.connected`, `platform.user.disconnected`, `platform.bootstrap.completed`, `platform.grant.created`, `platform.grant.revoked`, `platform.claim.redeemed`, `platform.claim.expired`, `platform.entitlement.granted`, `platform.entitlement.revoked`, `pending_approval.created`, `tx.awaiting_approval`, `sign.awaiting_approval`, `automation.run.failed`.
 
 ### Agent Chat (v0.43+)
 
