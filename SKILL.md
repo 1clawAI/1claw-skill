@@ -1,6 +1,6 @@
 ---
 name: 1claw
-version: 1.21.0
+version: 1.22.0
 description: HSM-backed secret management for AI agents — store, retrieve, rotate, and share secrets via the 1Claw vault without exposing them in context. 1Claw is also a JWKS-published OIDC issuer for Workload Identity Federation (Anthropic WIF, GCP STS, AWS STS).
 homepage: https://1claw.xyz
 repository: https://github.com/1clawAI/1claw
@@ -1450,12 +1450,17 @@ Agent signing mode is configured per-agent via `agents.treasury_signing_mode` (`
 | `GET`    | `/v1/platform/connections/{id}/pending-approvals`  | List consensus pending approvals (plt_ auth)           |
 | `POST`   | `/v1/platform/connections/{id}/pending-approvals/{pid}/decide` | Vote on pending approval (payload_hash) |
 | `POST`   | `/v1/platform/connections/{id}/runtimes`         | Create runtime for connection agent (plt_ auth)        |
-| `POST`   | `/v1/platform/connections/{id}/agents/{aid}/chat`  | Chat with connection agent (plt_ auth)                 |
+| `GET`    | `/v1/platform/connections/{id}/runtimes/{rid}`   | Get connection-scoped runtime (plt_ auth; not `/v1/runtimes/{id}`) |
+| `POST`   | `/v1/platform/connections/{id}/passkeys/enroll/begin`   | Start WebAuthn registration for connected end-user (plt_ auth) |
+| `POST`   | `/v1/platform/connections/{id}/passkeys/enroll/complete`  | Complete passkey registration for connected end-user |
+| `POST`   | `/v1/platform/connections/{id}/agents/{aid}/chat`  | Chat with connection agent (plt_ auth; `system`, `system_prompt`, `messages[]`; 402 on billing errors) |
 | `DELETE` | `/v1/platform/connections/{id}/signing-keys/{chain}` | Deactivate signing key for connection agent        |
 | `DELETE` | `/v1/platform/apps/{id}/spend-policies/{pid}`    | Deactivate a spend policy                              |
 | `GET`    | `/v1/platform/marketplace`                       | List approved platform apps (public, with category/tags/screenshots) |
 | `GET`    | `/v1/platform/apps/{id}/stats`                   | Get app stats (connected users, bootstraps, active connections) |
 | `POST`   | `/v1/webhooks/{id}/rotate-secret`                | Rotate webhook HMAC signing secret                     |
+
+**Platform expansion (v0.57–v0.59):** `GET /v1/platform/connections/{id}` returns `provisioned_tier` (effective billing tier when `billing_model` is `platform_pays` — set from template `plan` at bootstrap). Template spec supports `agents[].system_prompt` (default chat system prompt) and `agents[].runtime` / top-level `runtimes[]` / `provision_runtime: true`. Agents API: `system_prompt` on `POST/PATCH /v1/agents`. Connection chat accepts `system`, `system_prompt`, or inline `messages` with `role: "system"`. SDK: `platform.getConnection()`, `getConnectionRuntime()`, `connectionPasskeyEnrollBegin()`, `connectionPasskeyEnrollComplete()`, `connectionAgentChat()`.
 
 **Platform configuration fields:** `max_connected_users` (INTEGER) on `platform_apps` — enforced; new connections rejected when limit reached. `max_requests_per_minute` — per-app rate limits on platform API endpoints.
 
