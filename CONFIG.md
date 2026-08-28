@@ -9,7 +9,7 @@
 | `ONECLAW_AGENT_API_KEY` | Yes      | Agent API key (`ocv_...`). Auto-refreshes JWT.             |
 | `ONECLAW_AGENT_ID`      | No       | Agent UUID (auto-discovered from token exchange)           |
 | `ONECLAW_VAULT_ID`      | No       | UUID of the vault to operate on (auto-discovered from token exchange) |
-| `ONECLAW_BASE_URL`      | No       | API URL (default: `https://api.1claw.xyz`)                 |
+| `ONECLAW_BASE_URL`      | No       | API URL (default: `https://api.1claw.co`)                 |
 
 Only `ONECLAW_AGENT_API_KEY` is required. Agent ID and vault are auto-discovered from the token exchange response. Alternatively, use `ONECLAW_AGENT_TOKEN` (static JWT, expires ~1h) + `ONECLAW_VAULT_ID` for legacy mode.
 
@@ -19,7 +19,7 @@ Only `ONECLAW_AGENT_API_KEY` is required. Agent ID and vault are auto-discovered
 | --------------------- | -------- | -------------------------------------------- |
 | `ONECLAW_AGENT_TOKEN` | Yes      | Agent JWT (from `POST /v1/auth/agent-token`) |
 | `ONECLAW_VAULT_ID`    | Yes      | UUID of the vault to operate on              |
-| `ONECLAW_BASE_URL`    | No       | API URL (default: `https://api.1claw.xyz`)   |
+| `ONECLAW_BASE_URL`    | No       | API URL (default: `https://api.1claw.co`)   |
 
 ### MCP server (HTTP streaming mode)
 
@@ -27,7 +27,7 @@ Only `ONECLAW_AGENT_API_KEY` is required. Agent ID and vault are auto-discovered
 | ------------------ | -------- | ------------------------------------------ |
 | `MCP_TRANSPORT`    | Yes      | Set to `httpStream`                        |
 | `PORT`             | No       | HTTP port (default: `8080`)                |
-| `ONECLAW_BASE_URL` | No       | API URL (default: `https://api.1claw.xyz`) |
+| `ONECLAW_BASE_URL` | No       | API URL (default: `https://api.1claw.co`) |
 
 Per-request authentication via headers:
 
@@ -39,7 +39,7 @@ Per-request authentication via headers:
 | Variable                | Required | Description                                |
 | ----------------------- | -------- | ------------------------------------------ |
 | `ONECLAW_API_KEY`       | Yes\*    | Personal API key (`1ck_...`)               |
-| `ONECLAW_BASE_URL`      | No       | API URL (default: `https://api.1claw.xyz`) |
+| `ONECLAW_BASE_URL`      | No       | API URL (default: `https://api.1claw.co`) |
 | `ONECLAW_AGENT_ID`      | Yes\*    | Agent UUID (alternative to API key)        |
 | `ONECLAW_AGENT_API_KEY` | Yes\*    | Agent API key (`ocv_...`)                  |
 
@@ -47,7 +47,7 @@ Per-request authentication via headers:
 
 ## Getting your credentials
 
-1. Go to [1claw.xyz](https://1claw.xyz) and sign in.
+1. Go to [1claw.co](https://1claw.co) and sign in.
 2. Create a vault (or use an existing one).
 3. Register an agent under **Agents**.
 4. Copy the agent ID and API key.
@@ -55,7 +55,7 @@ Per-request authentication via headers:
 6. Exchange the agent credentials for a JWT:
 
 ```bash
-curl -X POST https://api.1claw.xyz/v1/auth/agent-token \
+curl -X POST https://api.1claw.co/v1/auth/agent-token \
   -H "Content-Type: application/json" \
   -d '{"agent_id":"<uuid>","api_key":"ocv_..."}'
 ```
@@ -78,11 +78,11 @@ Use the returned `access_token` as `ONECLAW_AGENT_TOKEN`.
 ## Rate limits and billing
 
 - **Free tier:** 1,000 API requests/month, 3 vaults, 50 secrets, 2 agents per organization.
-- **Subscription tiers:** Pro ($29/mo), Team ($299/mo), Business ($999/mo), Enterprise (custom). See [1claw.xyz/pricing](https://1claw.xyz/pricing).
+- **Subscription tiers:** Pro ($29/mo), Team ($299/mo), Business ($999/mo), Enterprise (custom). See [1claw.co/pricing](https://1claw.co/pricing).
 - **Overage methods (org chooses one):**
     - **Prepaid credits** — Top up $5–$1,000 via Stripe. Credits deducted at tier-discounted rates. Expire 12 months from purchase.
     - **x402 micropayments** — Per-query on-chain payments on Base. No credit card needed.
 - Share creation is rate-limited to 10 per minute per organization.
 - Agents cannot create email-based share invites (only human users can).
 - Share recipients must explicitly accept shares before accessing secrets.
-- Manage billing and upgrade at [1claw.xyz/settings/billing](https://1claw.xyz/settings/billing) or [1claw.xyz/pricing](https://1claw.xyz/pricing).
+- Manage billing and upgrade at [1claw.co/settings/billing](https://1claw.co/settings/billing) or [1claw.co/pricing](https://1claw.co/pricing).

@@ -2,7 +2,7 @@
 
 **Version:** 1.4.0 · [View on ClawHub](https://clawhub.ai/kmjones1979/1claw)
 
-An [OpenClaw](https://docs.openclaw.ai) skill that gives AI agents secure, HSM-backed secret management via [1Claw](https://1claw.xyz). Official skill; source: [github.com/1clawAI/1claw](https://github.com/1clawAI/1claw). Credential-related terms (API key, secret, token) are expected — the skill teaches agents to use the 1Claw vault, not to exfiltrate credentials.
+An [OpenClaw](https://docs.openclaw.ai) skill that gives AI agents secure, HSM-backed secret management via [1Claw](https://1claw.co). Official skill; source: [github.com/1clawAI/1claw](https://github.com/1clawAI/1claw). Credential-related terms (API key, secret, token) are expected — the skill teaches agents to use the 1Claw vault, not to exfiltrate credentials.
 
 ## What it does
 
@@ -34,7 +34,7 @@ Run from the `skill` directory or from the repo root.
 
 ## Links
 
-- [1Claw Dashboard](https://1claw.xyz)
-- [Documentation](https://docs.1claw.xyz)
+- [1Claw Dashboard](https://1claw.co)
+- [Documentation](https://docs.1claw.co)
 - [SDK](https://github.com/1clawAI/1claw-sdk)
 - [MCP Server](https://www.npmjs.com/package/@1claw/mcp)

@@ -141,9 +141,9 @@ Error 403: Insufficient permissions
 **Agent thinking:** I don't have 1Claw credentials yet. I'll self-enroll using the user's email (or name-only with `approval_url`).
 
 ```
-→ (HTTP) POST https://api.1claw.xyz/v1/agents/enroll
+→ (HTTP) POST https://api.1claw.co/v1/agents/enroll
   Body: {"name":"cursor-assistant","human_email":"user@example.com"}
-  Response: {"message":"...","approval_url":"https://1claw.xyz/agents/enroll/approve?token=..."}
+  Response: {"message":"...","approval_url":"https://1claw.co/agents/enroll/approve?token=..."}
 ```
 
 **Agent:** "I've started enrollment with 1Claw. Approve via the email or open **approval_url** if mail is delayed — then you'll get my Agent ID and API key. Once you have them:
