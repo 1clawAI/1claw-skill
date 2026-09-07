@@ -2076,6 +2076,94 @@ The human sees the share in their Inbound shares and accepts it. This is the pri
 
 ---
 
+## What shipped in v0.59–v0.60
+
+Six surfaces added recently that this skill did not previously mention.
+
+### Pre-built connectors (v0.59.15)
+
+`GET /v1/connectors/presets` lists them; `POST /v1/agents/{id}/connectors/{slug}/install`
+creates a binding scoped to that service's hosts and paths and starts OAuth.
+Gmail, Google Calendar, GitHub, Slack, X, Discord, Notion, Honcho.
+
+**Human users only.** Requested scopes may narrow a preset's list, never extend
+it. An HTTP binding with no `allowed_hosts` has no host restriction at all, so
+the scoping is the whole difference from a bare OAuth connection.
+
+### Action approvals + notification targets (v0.59.14–v0.59.16)
+
+`agents.action_approval_policy` turns "an agent wants to do X" into a decision a
+human can read. Targets fan the request out to SMS, webhook, email or push:
+`/v1/notification-targets` (**authenticated** — they were briefly public during
+development).
+
+**The risk tier is server-derived** from the policy and the payload, so an agent
+cannot declare its way into the weakest channel. SMS can only decide tier 1. A
+valid Twilio signature proves the message came from Twilio, not from the right
+person, so the sending number must also match a verified target.
+
+### Policy presets (v0.60.0)
+
+`GET /v1/policy-presets`, `POST /v1/agents/{id}/policy-preset/preview`, and
+`POST /v1/agents/{id}/policy-preset`. Four presets: `read-only-assistant`,
+`small-business-spender`, `inbox-agent`, `treasury-operator`.
+
+**A preset is a friendlier interface to the agent PATCH handler, not a way
+around it.** Applying one that loosens a guardrail returns 202 (queued) or 403
+(step-up), never a silent 200 — the same widening approval flow a hand edit
+gets. Preview changes nothing and names what would loosen, so a UI can say
+"this raises your daily limit from $10 to $100" instead of "this widens
+guardrails". Human users only.
+
+### Declarative charts (v0.59.17)
+
+`POST /v1/org/apply/diff` and `POST /v1/org/apply` — one `chart.yaml`
+provisions vaults, agents, policies and connectors. `1claw diff` / `1claw apply`
+are thin clients; the reconciler is server-side.
+
+**Human-only**, because a chart provisions access policies and an agent that
+could apply one could grant itself a vault it cannot currently read. It never
+deletes, has no prune, refuses guardrail fields, skips resources edited outside
+the chart rather than overwriting them, and treats unknown fields as errors.
+
+### Peer memory (v0.59.18)
+
+`POST /v1/peers`, `GET /v1/peers/{id}/context`, `/events`, `/predict-approval`.
+A shared model of one person across the agents serving them.
+
+**Access is by observer list and nothing else** — same org, same connection,
+broad scopes: none of it grants access, and a peer with no observers is readable
+by no agent. **Prediction is not permission:** `likelihood` (about a person) and
+`suggest_auto` (about your own policy) are separate fields, and `suggest_auto`
+is true only where a rule you already wrote permits that exact case.
+
+### Fleet management (v0.60.0)
+
+`GET /v1/platform/apps/{id}/fleets/{template_id}` and `/agents`;
+`POST .../bulk-patch`, `.../rollout`, `.../pause`. Every agent one bootstrap
+template provisioned, as one cohort. (Distinct from the informal "fleet
+patterns" below, which is about running many agents in one org.)
+
+**Every route here does what it does a thousand times with no per-agent
+review**, so the surface is narrower than the per-agent API rather than wider:
+
+- Guardrails and capability flags (`intents_api_enabled`,
+  `execution_intents_enabled`) are **not** bulk-patchable. Read
+  `bulk_patchable_fields` off the fleet summary rather than hard-coding it.
+- One bad field refuses the **whole** patch. A partially-applied bulk patch
+  across a thousand agents is worse than a rejected one.
+- An agent changed outside fleet control is **skipped, not corrected**, and the
+  field is recorded on it. `force` overrides the skip but still cannot carry a
+  guardrail.
+- A dry run **claims no job** (`job_id` is null), so it never blocks the real
+  rollout behind the one-rollout-per-template rule.
+
+MCP exposes fleets read-only: `platform_get_fleet`,
+`platform_list_fleet_agents`, and `platform_plan_fleet_rollout`, which always
+dry-runs. There is deliberately no bulk-patch or pause tool.
+
+---
+
 ## Fleet Patterns
 
 When many agents operate in the same organization:
