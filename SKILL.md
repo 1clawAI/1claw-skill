@@ -332,6 +332,20 @@ Partner-key secret engine for short-lived Bankr wallet API keys. Store the long-
 
 ## MCP Tools Reference
 
+The server ships 155 tools grouped into **toolsets**, and a session is only offered the toolsets its agent is entitled to. If a tool below is missing from `tools/list`, the agent is not entitled to its toolset — do not retry it by name; the server refuses hidden tools.
+
+| Toolset | Offered when |
+| --- | --- |
+| `inspect`, `vault`, `approvals` | always, for any agent |
+| `intents` | agent has `intents_api_enabled` |
+| `execute` | agent has `execution_intents_enabled` |
+| `cards` / `memory` / `channels` / `directory` | `cards_enabled` / `memory_enabled` / `shroud_enabled` / `discoverable` |
+| `treasury` / `delegation` | the agent signs for a treasury / has an active delegation (from the token exchange), else opt-in |
+| `chat`, `automations`, `runtimes`, `notification` | opt-in via `ONECLAW_MCP_TOOLSETS` (stdio) or `X-1Claw-Toolsets` (hosted): comma list or `all` |
+| `admin`, `platform` | never on an agent session |
+
+With `execution_require_tee` set, `get_secret`, `get_env_bundle` and `resolve_env` are hidden (the vault will not hand this agent secret values outside a TEE); writes and metadata stay. Hosted sessions re-check entitlements every 15 minutes and after any 403, then send `notifications/tools/list_changed` — re-list when you receive it.
+
 ### list_secrets
 
 List all secrets in the vault. Returns paths, types, and versions — never values.
