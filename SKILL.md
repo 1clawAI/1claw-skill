@@ -1843,8 +1843,8 @@ Two additional agent-level flags upgrade "TEE-available" to "TEE-required":
 
 | Flag | Behavior when true |
 | --- | --- |
-| `intents_require_tee` | Rejects transaction/sign requests not routed through Shroud TEE (403). Direct Vault calls fail. |
-| `execution_require_tee` | Rejects execute requests not routed through Shroud, AND blocks ALL direct secret reads by the agent (not just private_key/ssh_key). Forces use of Execution Intents bindings. |
+| `intents_require_tee` | Every transaction submit/sign is signed in Shroud's TEE. Calls to `api.1claw.co` are forwarded to Shroud by the vault (vault ≥ 0.61.19); only delegated/human credentials and DPoP-bound tokens are refused (403). |
+| `execution_require_tee` | Execute requests run on Shroud's TEE execution surface (forced by the vault, no routing needed), AND all direct secret reads by the agent are blocked (not just private_key/ssh_key). Forces use of Execution Intents bindings. |
 
 Both require the base flag to be on first (`intents_api_enabled` / `execution_intents_enabled`). Verification uses HMAC `X-1Claw-TEE-Origin` header (Shroud sets it; Vault validates via shared `ONECLAW_TEE_ORIGIN_SECRET`). Dashboard: Signing tab toggles with confirmation dialog.
 
