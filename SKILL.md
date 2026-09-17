@@ -906,43 +906,47 @@ Request human approval for a policy change or sensitive action. Agent-only — c
 | `reason`      | string | no       |         | Human-readable reason                                                         |
 | `risk_tier`   | number | no       | 1       | Risk level 1–5 (1=low, 5=critical)                                           |
 
-### memory_put
+### put_memory
 
-Store a memory entry for the agent (scratch, durable, or semantic tier).
+Store a memory entry for the agent (namespaced key/value; the vault indexes it for semantic search).
 
-| Parameter | Type   | Required | Default    | Description                                          |
-| --------- | ------ | -------- | ---------- | ---------------------------------------------------- |
-| `key`     | string | yes      |            | Memory key identifier                                |
-| `value`   | string | yes      |            | Memory value (text content)                          |
-| `tier`    | string | no       | `durable`  | Memory tier: `scratch`, `durable`, or `semantic`     |
-| `metadata`| object | no       |            | Optional JSON metadata                               |
+| Parameter     | Type   | Required | Description                                                      |
+| ------------- | ------ | -------- | ---------------------------------------------------------------- |
+| `agent_id`    | string | yes      | Agent ID, or `me` for the calling agent                          |
+| `namespace`   | string | yes      | Memory namespace (e.g. `context`, `preferences`, `state`)        |
+| `key`         | string | yes      | Key within the namespace                                         |
+| `value`       | string | yes      | JSON value to store                                              |
+| `ttl_seconds` | number | no       | Auto-expire after this many seconds                              |
 
-### memory_get
+### get_memory
 
-Retrieve a memory entry by key.
+Retrieve a memory entry by namespace + key.
 
-| Parameter | Type   | Required | Description      |
-| --------- | ------ | -------- | ---------------- |
-| `key`     | string | yes      | Memory key       |
+| Parameter   | Type   | Required | Description                             |
+| ----------- | ------ | -------- | --------------------------------------- |
+| `agent_id`  | string | yes      | Agent ID, or `me` for the calling agent |
+| `namespace` | string | yes      | Memory namespace                        |
+| `key`       | string | yes      | Key within the namespace                |
 
-### memory_list
+### list_memory
 
-List memory entries, optionally filtered by tier.
+List memory entries in a namespace (keys and metadata).
 
-| Parameter | Type   | Required | Description                                      |
-| --------- | ------ | -------- | ------------------------------------------------ |
-| `tier`    | string | no       | Filter by tier: `scratch`, `durable`, `semantic` |
-| `limit`   | number | no       | Max entries to return (default 50)               |
+| Parameter   | Type   | Required | Description                             |
+| ----------- | ------ | -------- | --------------------------------------- |
+| `agent_id`  | string | yes      | Agent ID, or `me` for the calling agent |
+| `namespace` | string | yes      | Memory namespace                        |
 
-### memory_search
+### search_memory
 
-Semantic vector search over agent memory entries (semantic tier only).
+Semantic similarity search over a namespace.
 
 | Parameter   | Type   | Required | Default | Description                             |
 | ----------- | ------ | -------- | ------- | --------------------------------------- |
+| `agent_id`  | string | yes      |         | Agent ID, or `me` for the calling agent |
+| `namespace` | string | yes      |         | Memory namespace to search within       |
 | `query`     | string | yes      |         | Natural language search query           |
-| `limit`     | number | no       | 10      | Max results                             |
-| `threshold` | number | no       | 0.7     | Minimum similarity score (0.0–1.0)      |
+| `top_k`     | number | no       | 5       | Number of results                       |
 
 ### delete_memory
 
@@ -1088,15 +1092,14 @@ Human-controlled authorization framework. Agents **cannot** delegate to other ag
 
 **Dashboard:** Sub-agent creation wizard at `/agents/sub-agent-wizard` (4-step flow, 6 role presets: Research, Image Gen, Treasury, Comms, Code, Custom). Delegations tab on agent detail page (outbound/inbound tables with create/edit/revoke dialogs). Sub-Agents card on runtime detail page with authorization badges.
 
-### search_directory
+### search_agent_directory
 
 Search the public agent discovery directory.
 
-| Parameter  | Type   | Required | Description                                |
-| ---------- | ------ | -------- | ------------------------------------------ |
-| `query`    | string | no       | Search term                                |
-| `category` | string | no       | Filter by category                         |
-| `limit`    | number | no       | Max results (default 20)                   |
+| Parameter | Type   | Required | Description                         |
+| --------- | ------ | -------- | ----------------------------------- |
+| `query`   | string | no       | Agent name or description search    |
+| `tags`    | string | no       | Comma-separated tags to filter by   |
 
 ### send_chat_message
 
