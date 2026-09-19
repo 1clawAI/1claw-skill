@@ -332,7 +332,7 @@ Partner-key secret engine for short-lived Bankr wallet API keys. Store the long-
 
 ## MCP Tools Reference
 
-The server ships 155 tools grouped into **toolsets**, and a session is only offered the toolsets its agent is entitled to. If a tool below is missing from `tools/list`, the agent is not entitled to its toolset — do not retry it by name; the server refuses hidden tools.
+The server ships 159 tools grouped into **toolsets**, and a session is only offered the toolsets its agent is entitled to. If a tool below is missing from `tools/list`, the agent is not entitled to its toolset — do not retry it by name; the server refuses hidden tools.
 
 | Toolset | Offered when |
 | --- | --- |
@@ -872,6 +872,22 @@ List recent execution-intent events for the current agent: status, intent_type, 
 | `limit`   | number | no       | 50      | Max events to return  |
 | `offset`  | number | no       | 0       | Pagination offset     |
 
+### list_event_subscriptions
+
+Polled connector event sources this agent is subscribed to (`gmail.message.received`, `stripe.invoice.created`, `drive.file.changed`, …). 1Claw polls each source through the installed binding and emits new items as automation events of that type — react with an automation whose `trigger_type` is `event` and whose `event_filter.event_type` matches. Subscriptions are created by a human; this only reads them.
+
+| Parameter  | Type   | Required | Description |
+| ---------- | ------ | -------- | ----------- |
+| `agent_id` | string | yes      | Agent UUID (an agent may only read its own) |
+
+### list_child_agents
+
+Child agents under a parent (vault ≥ 0.61.30): cheap sub-agents with their own API key, memory namespaces and approval policy, a subset of the parent's vaults and scopes, the parent's policies inherited, and no charge against the plan's agent cap. Creation is human-only (`POST /v1/agents/{id}/children`).
+
+| Parameter  | Type   | Required | Description |
+| ---------- | ------ | -------- | ----------- |
+| `agent_id` | string | yes      | Parent agent UUID (an agent may only list its own children) |
+
 ### platform_reissue_claim
 
 Reissue a claim URL for an already-bootstrapped connection. Use when the original 10-minute claim token has expired — no resources are re-provisioned.
@@ -906,6 +922,15 @@ Get details of a specific approval request.
 | Parameter     | Type   | Required | Description                    |
 | ------------- | ------ | -------- | ------------------------------ |
 | `approval_id` | string | yes      | UUID of the approval request   |
+
+### cancel_approval
+
+Withdraw a pending approval this agent created (vault ≥ 0.61.29). First answer wins: a request the human already decided cannot be cancelled. Subscribers receive `approval.decided` with `decision: "cancelled"`.
+
+| Parameter     | Type   | Required | Description |
+| ------------- | ------ | -------- | ----------- |
+| `approval_id` | string | yes      | The approval to cancel |
+| `reason`      | string | no       | Why (recorded on the approval) |
 
 ### request_approval
 
