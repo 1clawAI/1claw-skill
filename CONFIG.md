@@ -77,7 +77,7 @@ Use the returned `access_token` as `ONECLAW_AGENT_TOKEN`.
 
 ## Rate limits and billing
 
-- **Free tier:** 1,000 API requests/month, 3 vaults, 50 secrets, 2 agents per organization.
+- **Free tier:** 100 API requests/month, 10 signatures/month, 1 vault, 10 secrets, 1 agent, 1 automation (10 runs/month) per organization.
 - **Subscription tiers:** Pro ($29/mo), Team ($299/mo), Business ($999/mo), Enterprise (custom). See [1claw.co/pricing](https://1claw.co/pricing).
 - **Overage methods (org chooses one):**
     - **Prepaid credits** — Top up $5–$1,000 via Stripe. Credits deducted at tier-discounted rates. Expire 12 months from purchase.
